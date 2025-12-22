@@ -344,6 +344,8 @@ bool CoriolisMatrixAlgorithm(const Model& model,
                                   massMatrixDerivative.rows(),
                                   massMatrixDerivative.cols());
 
+    LinkIndex baseLinkIndex = traversal.getBaseLink()->getIndex();
+
     // Forward pass to initialize the CRBI
     for (int i = 0; i < traversal.getNrOfVisitedLinks(); i++)
     {
@@ -366,7 +368,6 @@ bool CoriolisMatrixAlgorithm(const Model& model,
         // get link and parent link
         LinkConstPtr visitedLink = traversal.getLink(traversalEl);
         LinkIndex visitedLinkIndex = visitedLink->getIndex();
-        LinkConstPtr parentLink = traversal.getParentLinkFromLinkIndex(visitedLinkIndex);
         // get joint between parent and child
         IJointConstPtr toParentJoint = traversal.getParentJointFromLinkIndex(visitedLinkIndex);
         // get link velocity
@@ -374,7 +375,7 @@ bool CoriolisMatrixAlgorithm(const Model& model,
         // get link inertia
         SpatialInertia inertia = linkCRBIs(visitedLinkIndex);
 
-        if (parentLink)
+        if (visitedLinkIndex != baseLinkIndex)
         { // the visited link is NOT the base link
 
             if (toParentJoint->getNrOfDOFs() == 0)
@@ -428,7 +429,7 @@ bool CoriolisMatrixAlgorithm(const Model& model,
         LinkIndex visitedLinkIndex = visitedLink->getIndex();
         LinkConstPtr parentLink = traversal.getParentLinkFromLinkIndex(visitedLinkIndex);
 
-        if (visitedLinkIndex)
+        if (visitedLinkIndex != baseLinkIndex)
         {
             // the visited link is NOT the base link
             IJointConstPtr toParentJoint = traversal.getParentJointFromLinkIndex(visitedLinkIndex);
@@ -629,7 +630,7 @@ bool CoriolisMatrixAlgorithm(const Model& model,
                     LinkConstPtr ancestorParentLink
                         = traversal.getParentLinkFromLinkIndex(ancestorLinkIndex);
                     LinkIndex ancestorParentIndex = ancestorParentLink->getIndex();
-                    assert(ancestorParentIndex == 0); // base link
+                    assert(ancestorParentIndex == baseLinkIndex);
 
                     Transform otherLink_X_parentLink
                         = linkPos(ancestorLinkIndex).inverse() * linkPos(ancestorParentIndex);
