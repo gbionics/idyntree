@@ -1597,14 +1597,32 @@ void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
 }
 
 void testCoriolisMatrixAlgorithmOnFloatingBaseModelAllRepresentations(std::string modelFilePath)
-{
+{    
 
     for (auto repr :
          {BODY_FIXED_REPRESENTATION, MIXED_REPRESENTATION, INERTIAL_FIXED_REPRESENTATION})
-    {
+    {   
+
+        std::string reprStr;
+        switch (repr)
+        {
+        case BODY_FIXED_REPRESENTATION:
+            reprStr = "BODY_FIXED_REPRESENTATION";
+            break;
+        case INERTIAL_FIXED_REPRESENTATION:
+            reprStr = "INERTIAL_FIXED_REPRESENTATION";
+            break;
+        case MIXED_REPRESENTATION:
+            reprStr = "MIXED_REPRESENTATION";
+            break;
+        default:
+            reprStr = "UNKNOWN_REPRESENTATION";
+            break;
+        }
+
         std::cout << "Testing getCoriolisAndMassMatrices using different floating bases for "
                      "representation "
-                  << repr << " on model " << modelFilePath << std::endl;
+                  << reprStr << " on model " << modelFilePath << std::endl;
         testCoriolisMatrixAlgorithmOnFloatingBaseModel(modelFilePath, repr);
     }
 }
