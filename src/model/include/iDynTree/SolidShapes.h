@@ -243,8 +243,8 @@ public:
     /**
      * Returns the filename substituting the prefix "package://" with the corresponding absolute
      * path. The absolute path is determined by searching for the file using the paths specified in
-     * the packageDirs vector or if empty in the "GAZEBO_MODEL_PATH", "ROS_PACKAGE_PATH" and
-     * "AMENT_PREFIX_PATH" environmental variables.
+     * the packageDirs vector or if empty in the "GZ_SIM_RESOURCE_PATH", "GAZEBO_MODEL_PATH",
+     * "ROS_PACKAGE_PATH" and "AMENT_PREFIX_PATH" environmental variables.
      */
     std::string getFileLocationOnLocalFileSystem() const;
 
@@ -256,8 +256,8 @@ public:
     /**
      * Sets the the package directories.
      * @note if not set the absolute path is determined by searching for the file using the
-     * paths specified in the "GAZEBO_MODEL_PATH", "ROS_PACKAGE_PATH" and "AMENT_PREFIX_PATH"
-     * environmental variables.
+     * paths specified in the "GZ_SIM_RESOURCE_PATH", "GAZEBO_MODEL_PATH", "ROS_PACKAGE_PATH" and
+     * "AMENT_PREFIX_PATH" environmental variables.
      */
     void setPackageDirs(const std::vector<std::string>& packageDirs);
 

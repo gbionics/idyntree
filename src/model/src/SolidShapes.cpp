@@ -295,7 +295,8 @@ std::string ExternalMesh::getFileLocationOnLocalFileSystem() const
     } else
     {
         // List of variables that contain <prefix>/share paths
-        std::vector<std::string> envListShare = {"GAZEBO_MODEL_PATH", "ROS_PACKAGE_PATH"};
+        std::vector<std::string> envListShare
+            = {"GZ_SIM_RESOURCE_PATH", "GAZEBO_MODEL_PATH", "ROS_PACKAGE_PATH"};
         // List of variables that contains <prefix> paths (to which /share needs to be added)
         std::vector<std::string> envListPrefix = {"AMENT_PREFIX_PATH"};
 

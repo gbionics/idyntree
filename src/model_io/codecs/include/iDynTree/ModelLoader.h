@@ -130,7 +130,7 @@ public:
      * @param packageDirs a vector containing the different directories where to
      * search for model meshes
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
      * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
      * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
@@ -149,7 +149,7 @@ public:
      * @param packageDirs a vector containing the different directories where to
      * search for model meshes
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
      * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
      * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
@@ -201,7 +201,7 @@ public:
      * false otherwise.
      *
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
      * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
      * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
@@ -229,7 +229,7 @@ public:
      * false otherwise.
      *
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
      * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
      * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
@@ -321,7 +321,7 @@ public:
      * false otherwise.
      *
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
      * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
      * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
@@ -357,7 +357,7 @@ public:
      * joint types.
      *
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
      * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
      * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
@@ -389,7 +389,7 @@ public:
      * false otherwise.
      *
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
      * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
      * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
@@ -425,7 +425,7 @@ public:
      * joint types.
      *
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
      * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
      * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
