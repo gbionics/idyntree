@@ -10,6 +10,7 @@
 #include <iDynTree/SpatialInertia.h>
 #include <iDynTree/Transform.h>
 #include <iDynTree/Twist.h>
+#include <iDynTree/URIUtils.h>
 #include <iDynTree/VectorDynSize.h>
 #include <iDynTree/VectorFixSize.h>
 #include <pybind11/operators.h>
@@ -262,6 +263,14 @@ void iDynTreeCoreBindings(pybind11::module& module)
             AngVelocity ang_vel(ang_velocity.data(), 3);
             return Twist(lin_vel, ang_vel);
         }));
+
+    // URI utility functions
+    module.def("resolve_uri",
+               &resolveURI,
+               py::arg("uri"),
+               py::arg("package_dirs") = std::vector<std::string>(),
+               "Resolve a URI (such as package:// or model://) to an absolute path on the local "
+               "file system.");
 }
 } // namespace bindings
 } // namespace iDynTree

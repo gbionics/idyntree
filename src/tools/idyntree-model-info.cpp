@@ -4,6 +4,7 @@
 #include <iDynTree/KinDynComputations.h>
 #include <iDynTree/Model.h>
 #include <iDynTree/ModelLoader.h>
+#include <iDynTree/URIUtils.h>
 
 #include "cmdline.h"
 
@@ -156,6 +157,10 @@ int main(int argc, char** argv)
 
     // Read model
     std::string modelPath = cmd.get<std::string>("model");
+
+    // Resolve URI (package:// or model://) to local file system path
+    modelPath = iDynTree::resolveURI(modelPath);
+
     iDynTree::ModelLoader loader;
     bool ok = loader.loadModelFromFile(modelPath);
     iDynTree::KinDynComputations model;

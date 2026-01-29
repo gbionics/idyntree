@@ -47,6 +47,7 @@
 
 //Utils
 #include "iDynTree/Utils.h"
+#include "iDynTree/URIUtils.h"
 
 // Basic math classes
 #include "iDynTree/MatrixDynSize.h"
@@ -174,6 +175,7 @@ namespace std {
 
 //Utils
 %include "iDynTree/Utils.h"
+%include "iDynTree/URIUtils.h"
 
 /* Note : always include headers following the inheritance order */
 // Basic math classes

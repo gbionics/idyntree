@@ -3,6 +3,7 @@
 
 #include <iDynTree/Model.h>
 #include <iDynTree/ModelLoader.h>
+#include <iDynTree/URIUtils.h>
 
 #include <iDynTree/Visualizer.h>
 
@@ -35,8 +36,10 @@ int main(int argc, char** argv)
     addOptions(cmd);
     cmd.parse_check(argc, argv);
 
-    // Read model
-    const std::string& modelPath = cmd.get<std::string>("model");
+    // Read model and resolve URI (package:// or model://) to local file system path
+    std::string modelPath = cmd.get<std::string>("model");
+    modelPath = iDynTree::resolveURI(modelPath);
+
     iDynTree::ModelLoader mdlLoader;
     bool ok = mdlLoader.loadModelFromFile(modelPath);
 

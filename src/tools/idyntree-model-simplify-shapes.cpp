@@ -5,12 +5,16 @@
 
 // To load models from file
 #include <iDynTree/ModelLoader.h>
+#include <iDynTree/URIUtils.h>
 
 // To approximate shapes of a model
 #include <iDynTree/ModelTransformersSolidShapes.h>
 
 // To write model to file
 #include <iDynTree/ModelExporter.h>
+
+// To resolve URIs
+#include <iDynTree/URIUtils.h>
 
 #include "cmdline.h"
 
@@ -42,7 +46,11 @@ int main(int argc, char** argv)
     cmd.parse_check(argc, argv);
 
     // Read model
-    const std::string& modelPath = cmd.get<std::string>("model");
+    std::string modelPath = cmd.get<std::string>("model");
+
+    // Resolve URI (package:// or model://) to local file system path
+    modelPath = iDynTree::resolveURI(modelPath);
+
     const std::string& outputModelPath = cmd.get<std::string>("output-model");
     const std::string& shapesApproximation = cmd.get<std::string>("shapes-approximation");
 
