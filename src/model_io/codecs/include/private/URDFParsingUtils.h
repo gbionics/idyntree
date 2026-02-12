@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -42,20 +43,32 @@ bool inline stringToUnsignedIntWithClassicLocale(const std::string& inStr, unsig
     return !(ss.fail());
 }
 
-bool inline doubleToStringWithClassicLocale(const double& inDouble, std::string& outStr)
+bool inline doubleToStringWithClassicLocale(const double& inDouble,
+                                            std::string& outStr,
+                                            int precision = 0)
 {
     if (std::isnan(inDouble) || std::isinf(inDouble))
     {
         return false;
     }
 
-    // fpconv returns nul-terminated strings, that can be converted directly to C++ std::string
-    // see
-    // https://github.com/night-shift/fpconv/tree/4a087d1b2df765baa409536931916a2c082cdda4#example-usage
-    char buf[24 + 1];
-    int str_len = idyntree_private_fpconv_dtoa(inDouble, buf);
-    buf[str_len] = '\0';
-    outStr = buf;
+    if (precision > 0)
+    {
+        // Use std::stringstream with specified precision
+        std::ostringstream ss;
+        ss.imbue(std::locale::classic());
+        ss << std::setprecision(precision) << inDouble;
+        outStr = ss.str();
+    } else
+    {
+        // fpconv returns nul-terminated strings, that can be converted directly to C++ std::string
+        // see
+        // https://github.com/night-shift/fpconv/tree/4a087d1b2df765baa409536931916a2c082cdda4#example-usage
+        char buf[24 + 1];
+        int str_len = idyntree_private_fpconv_dtoa(inDouble, buf);
+        buf[str_len] = '\0';
+        outStr = buf;
+    }
     return true;
 }
 
@@ -137,14 +150,14 @@ bool inline vector3FromString(const std::string& vector_str, Vector3& out)
 }
 
 template <typename iDynTreeVectorType>
-bool inline vectorToString(const iDynTreeVectorType& in, std::string& out_str)
+bool inline vectorToString(const iDynTreeVectorType& in, std::string& out_str, int precision = 0)
 {
     std::stringstream ss;
     bool ok = true;
     for (unsigned int i = 0; i < in.size(); ++i)
     {
         std::string bufStr;
-        ok = ok && doubleToStringWithClassicLocale(in(i), bufStr);
+        ok = ok && doubleToStringWithClassicLocale(in(i), bufStr, precision);
         if (i != 0)
         {
             ss << " ";

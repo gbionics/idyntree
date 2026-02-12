@@ -89,6 +89,15 @@ struct ModelExporterOptions
     std::string sphericalJointRevoluteJointPrefix;
 
     /**
+     * Numerical precision for floating-point values in exported URDF.
+     * If greater then 0, specify the precision (i.e. how many digits are generated) of floating
+     * point output when converting doubles to strings. Default: 0, i.e. do not use a fixed number
+     * of digits, but use the minimum number of digits required to represent exactly the floating
+     * point value
+     */
+    int numericalPrecision;
+
+    /**
      * Constructor.
      */
     ModelExporterOptions();

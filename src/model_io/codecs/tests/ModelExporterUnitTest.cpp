@@ -567,6 +567,107 @@ void testSphericalJointExportDisabled()
     std::cerr << "[TEST] testSphericalJointExportDisabled passed" << std::endl;
 }
 
+void testNumericalPrecision()
+{
+    // Test numerical precision options in model export
+
+    Model model;
+
+    // Create a model with precise inertia values
+    double mass = 1.23456789012345;
+    Position com(1.23456789012345, 2.34567890123456, 3.45678901234567);
+    RotationalInertia rotInertia;
+    rotInertia.zero();
+    rotInertia(0, 0) = 0.123456789;
+    rotInertia(1, 1) = 0.234567890;
+    rotInertia(2, 2) = 0.345678901;
+    SpatialInertia inertia1(mass, com, rotInertia);
+    SpatialInertia inertia2 = getRandomInertia();
+
+    Link link1, link2;
+    link1.setInertia(inertia1);
+    link2.setInertia(inertia2);
+
+    model.addLink("link1", link1);
+    model.addLink("link2", link2);
+
+    // Create a joint with specific transform values to test precision on transforms
+    Transform link1_H_link2 = Transform::Identity();
+    link1_H_link2.setPosition(Position(1.23456789012345, 2.34567890123456, 3.45678901234567));
+
+    auto joint = std::make_unique<RevoluteJoint>();
+    joint->setAttachedLinks(model.getLinkIndex("link1"), model.getLinkIndex("link2"));
+    joint->setRestTransform(link1_H_link2);
+
+    Axis axis;
+    axis.setDirection(Direction(0.0, 0.0, 1.0));
+    axis.setOrigin(Position(0.0, 0.0, 0.0));
+    joint->setAxis(axis, model.getLinkIndex("link2"));
+
+    model.addJoint("link1", "link2", "joint1", joint.get());
+
+    // Add an additional frame to test precision on frame transforms
+    Transform link1_H_frame = Transform::Identity();
+    link1_H_frame.setPosition(Position(4.56789012345678, 5.67890123456789, 6.78901234567890));
+    model.addAdditionalFrameToLink("link1", "test_frame", link1_H_frame);
+
+    // Check that the default option (0) uses maximum precision
+    {
+        ModelExporter exporter;
+        ModelExporterOptions options;
+        ASSERT_EQUAL_DOUBLE(options.numericalPrecision, 0);
+
+        bool ok = exporter.init(model, options);
+        ASSERT_IS_TRUE(ok);
+
+        std::string urdfString;
+        ok = exporter.exportModelToString(urdfString);
+        ASSERT_IS_TRUE(ok);
+
+        std::cerr << "URDF with default (maximum) precision:" << std::endl
+                  << urdfString << std::endl;
+
+        // Verify that the output contains high precision values
+        ASSERT_IS_TRUE(urdfString.find("1.234567890") != std::string::npos);
+    }
+
+    // Check that a custom option (6) affects all numerical values
+    {
+        ModelExporter exporter;
+        ModelExporterOptions options;
+        options.numericalPrecision = 6;
+
+        bool ok = exporter.init(model, options);
+        ASSERT_IS_TRUE(ok);
+
+        std::string urdfString;
+        ok = exporter.exportModelToString(urdfString);
+        ASSERT_IS_TRUE(ok);
+
+        std::cerr << "URDF with precision=6:" << std::endl << urdfString << std::endl;
+
+        // Reload and verify values are reasonably close
+        ModelLoader loader;
+        ok = loader.loadModelFromString(urdfString);
+        ASSERT_IS_TRUE(ok);
+
+        Model reloadedModel = loader.model();
+        LinkIndex linkIdx = reloadedModel.getLinkIndex("link1");
+        ASSERT_IS_TRUE(linkIdx != LINK_INVALID_INDEX);
+
+        SpatialInertia reloadedInertia = reloadedModel.getLink(linkIdx)->getInertia();
+
+        // With precision=6 values should be close but not exact
+        double massTolerance = 1e-5;
+        ASSERT_EQUAL_DOUBLE_TOL(inertia1.getMass(), reloadedInertia.getMass(), massTolerance);
+
+        std::cerr << "Original mass: " << inertia1.getMass()
+                  << "Reloaded mass: " << reloadedInertia.getMass() << std::endl;
+    }
+
+    std::cerr << "[TEST] testNumericalPrecision passed" << std::endl;
+}
+
 // Update the main function to include the new tests:
 int main()
 {
@@ -590,6 +691,9 @@ int main()
     // Add the new spherical joint export tests
     testSphericalJointExportToURDF();
     testSphericalJointExportDisabled();
+
+    // Add the numerical precision test
+    testNumericalPrecision();
 
     return EXIT_SUCCESS;
 }

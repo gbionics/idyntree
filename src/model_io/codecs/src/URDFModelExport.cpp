@@ -50,15 +50,15 @@ namespace iDynTree
  * </parent_element>
  * where the actual values of the xyz and rpy attributes depend on the input trans argument.
  */
-bool exportTransform(const Transform& trans, xmlNodePtr parent_element)
+bool exportTransform(const Transform& trans, xmlNodePtr parent_element, int precision = 0)
 {
     bool ok = true;
     xmlNodePtr origin = xmlNewChild(parent_element, NULL, BAD_CAST "origin", NULL);
     std::string pose_xyz_str;
-    ok = ok && vectorToString(trans.getPosition(), pose_xyz_str);
+    ok = ok && vectorToString(trans.getPosition(), pose_xyz_str, precision);
     std::string pose_rpy_str;
     Vector3 pose_rpy = trans.getRotation().asRPY();
-    ok = ok && vectorToString(pose_rpy, pose_rpy_str);
+    ok = ok && vectorToString(pose_rpy, pose_rpy_str, precision);
     xmlNewProp(origin, BAD_CAST "xyz", BAD_CAST pose_xyz_str.c_str());
     xmlNewProp(origin, BAD_CAST "rpy", BAD_CAST pose_rpy_str.c_str());
     return ok;
@@ -76,32 +76,34 @@ bool exportTransform(const Transform& trans, xmlNodePtr parent_element)
  * where the actual values of the origin, mass and inertia element's attributes depend on the input
  * inertia argument.
  */
-bool exportInertial(const SpatialInertia& inertia, xmlNodePtr parent_element)
+bool exportInertial(const SpatialInertia& inertia, xmlNodePtr parent_element, int precision = 0)
 {
     bool ok = true;
     std::string bufStr;
     xmlNodePtr inertial = xmlNewChild(parent_element, NULL, BAD_CAST "inertial", NULL);
 
     xmlNodePtr mass_xml = xmlNewChild(inertial, NULL, BAD_CAST "mass", NULL);
-    ok = ok && doubleToStringWithClassicLocale(inertia.getMass(), bufStr);
+    ok = ok && doubleToStringWithClassicLocale(inertia.getMass(), bufStr, precision);
     xmlNewProp(mass_xml, BAD_CAST "value", BAD_CAST bufStr.c_str());
 
     ok = ok
-         && exportTransform(Transform(Rotation::Identity(), inertia.getCenterOfMass()), inertial);
+         && exportTransform(Transform(Rotation::Identity(), inertia.getCenterOfMass()),
+                            inertial,
+                            precision);
 
     xmlNodePtr inertia_xml = xmlNewChild(inertial, NULL, BAD_CAST "inertia", NULL);
     RotationalInertia rotInertia = inertia.getRotationalInertiaWrtCenterOfMass();
-    ok = ok && doubleToStringWithClassicLocale(rotInertia(0, 0), bufStr);
+    ok = ok && doubleToStringWithClassicLocale(rotInertia(0, 0), bufStr, precision);
     xmlNewProp(inertia_xml, BAD_CAST "ixx", BAD_CAST bufStr.c_str());
-    ok = ok && doubleToStringWithClassicLocale(rotInertia(0, 1), bufStr);
+    ok = ok && doubleToStringWithClassicLocale(rotInertia(0, 1), bufStr, precision);
     xmlNewProp(inertia_xml, BAD_CAST "ixy", BAD_CAST bufStr.c_str());
-    ok = ok && doubleToStringWithClassicLocale(rotInertia(0, 2), bufStr);
+    ok = ok && doubleToStringWithClassicLocale(rotInertia(0, 2), bufStr, precision);
     xmlNewProp(inertia_xml, BAD_CAST "ixz", BAD_CAST bufStr.c_str());
-    ok = ok && doubleToStringWithClassicLocale(rotInertia(1, 1), bufStr);
+    ok = ok && doubleToStringWithClassicLocale(rotInertia(1, 1), bufStr, precision);
     xmlNewProp(inertia_xml, BAD_CAST "iyy", BAD_CAST bufStr.c_str());
-    ok = ok && doubleToStringWithClassicLocale(rotInertia(1, 2), bufStr);
+    ok = ok && doubleToStringWithClassicLocale(rotInertia(1, 2), bufStr, precision);
     xmlNewProp(inertia_xml, BAD_CAST "iyz", BAD_CAST bufStr.c_str());
-    ok = ok && doubleToStringWithClassicLocale(rotInertia(2, 2), bufStr);
+    ok = ok && doubleToStringWithClassicLocale(rotInertia(2, 2), bufStr, precision);
     xmlNewProp(inertia_xml, BAD_CAST "izz", BAD_CAST bufStr.c_str());
 
     return ok;
@@ -132,7 +134,8 @@ enum exportSolidShapePropertyType
 };
 bool exportSolidShape(const SolidShape* solidShape,
                       exportSolidShapePropertyType type,
-                      xmlNodePtr parent_element)
+                      xmlNodePtr parent_element,
+                      int precision = 0)
 {
     bool ok = true;
     std::string element_name;
@@ -155,7 +158,7 @@ bool exportSolidShape(const SolidShape* solidShape,
     }
 
     // Export transform
-    ok = ok && exportTransform(solidShape->getLink_H_geometry(), root_shape_xml);
+    ok = ok && exportTransform(solidShape->getLink_H_geometry(), root_shape_xml, precision);
 
     // Export geometry
     xmlNodePtr geometry_xml = xmlNewChild(root_shape_xml, NULL, BAD_CAST "geometry", NULL);
@@ -170,7 +173,7 @@ bool exportSolidShape(const SolidShape* solidShape,
         // Export size attribute
         double size_data[3] = {box->getX(), box->getY(), box->getZ()};
         std::string size_str;
-        ok = ok && vectorToString(Vector3(size_data, 3), size_str);
+        ok = ok && vectorToString(Vector3(size_data, 3), size_str, precision);
         xmlNewProp(box_xml, BAD_CAST "size", BAD_CAST size_str.c_str());
 
     } else if (solidShape->isCylinder())
@@ -182,12 +185,12 @@ bool exportSolidShape(const SolidShape* solidShape,
 
         // Export radius attribute
         std::string radius_str;
-        ok = ok && doubleToStringWithClassicLocale(cylinder->getRadius(), radius_str);
+        ok = ok && doubleToStringWithClassicLocale(cylinder->getRadius(), radius_str, precision);
         xmlNewProp(cylinder_xml, BAD_CAST "radius", BAD_CAST radius_str.c_str());
 
         // Export length attribute
         std::string length_str;
-        ok = ok && doubleToStringWithClassicLocale(cylinder->getLength(), length_str);
+        ok = ok && doubleToStringWithClassicLocale(cylinder->getLength(), length_str, precision);
         xmlNewProp(cylinder_xml, BAD_CAST "length", BAD_CAST length_str.c_str());
 
     } else if (solidShape->isSphere())
@@ -199,7 +202,7 @@ bool exportSolidShape(const SolidShape* solidShape,
 
         // Export radius attribute
         std::string radius_str;
-        ok = ok && doubleToStringWithClassicLocale(sphere->getRadius(), radius_str);
+        ok = ok && doubleToStringWithClassicLocale(sphere->getRadius(), radius_str, precision);
         xmlNewProp(sphere_xml, BAD_CAST "radius", BAD_CAST radius_str.c_str());
 
     } else if (solidShape->isExternalMesh())
@@ -214,7 +217,7 @@ bool exportSolidShape(const SolidShape* solidShape,
 
         // Export scale attribute
         std::string scale_str;
-        ok = ok && vectorToString(mesh->getScale(), scale_str);
+        ok = ok && vectorToString(mesh->getScale(), scale_str, precision);
         xmlNewProp(mesh_xml, BAD_CAST "scale", BAD_CAST scale_str.c_str());
 
     } else
@@ -235,7 +238,7 @@ bool exportSolidShape(const SolidShape* solidShape,
         {
             xmlNodePtr color_xml = xmlNewChild(material_xml, NULL, BAD_CAST "color", NULL);
             std::string material_str;
-            ok = ok && vectorToString(material.color(), material_str);
+            ok = ok && vectorToString(material.color(), material_str, precision);
             xmlNewProp(color_xml, BAD_CAST "rgba", BAD_CAST material_str.c_str());
         }
         if (material.hasTexture())
@@ -270,13 +273,14 @@ bool exportSolidShape(const SolidShape* solidShape,
 bool exportLink(const Link& link,
                 const std::string linkName,
                 const Model& model,
-                xmlNodePtr parent_element)
+                xmlNodePtr parent_element,
+                int precision = 0)
 {
     bool ok = true;
     xmlNodePtr link_xml = xmlNewChild(parent_element, NULL, BAD_CAST "link", NULL);
     xmlNewProp(link_xml, BAD_CAST "name", BAD_CAST linkName.c_str());
 
-    ok = ok && exportInertial(link.getInertia(), link_xml);
+    ok = ok && exportInertial(link.getInertia(), link_xml, precision);
 
     LinkIndex linkIndex = model.getLinkIndex(linkName);
 
@@ -287,7 +291,7 @@ bool exportLink(const Link& link,
     {
         SolidShape* exportedShape
             = model.visualSolidShapes().getLinkSolidShapes()[linkIndex][shapeIdx];
-        exportSolidShape(exportedShape, VISUAL, link_xml);
+        exportSolidShape(exportedShape, VISUAL, link_xml, precision);
     }
 
     // Export collision shapes
@@ -298,7 +302,7 @@ bool exportLink(const Link& link,
         // Clone the shape
         SolidShape* exportedShape
             = model.collisionSolidShapes().getLinkSolidShapes()[linkIndex][shapeIdx];
-        exportSolidShape(exportedShape, COLLISION, link_xml);
+        exportSolidShape(exportedShape, COLLISION, link_xml, precision);
     }
 
     return ok;
@@ -331,7 +335,8 @@ bool exportJoint(IJointConstPtr joint,
                  LinkConstPtr parentLink,
                  LinkConstPtr childLink,
                  const Model& model,
-                 xmlNodePtr parent_element)
+                 xmlNodePtr parent_element,
+                 int precision = 0)
 {
     bool ok = true;
     xmlNodePtr joint_xml = xmlNewChild(parent_element, NULL, BAD_CAST "joint", NULL);
@@ -370,7 +375,8 @@ bool exportJoint(IJointConstPtr joint,
 
     // origin
     exportTransform(joint->getRestTransform(parentLink->getIndex(), childLink->getIndex()),
-                    joint_xml);
+                    joint_xml,
+                    precision);
 
     if (joint->getNrOfDOFs() != 0)
     {
@@ -412,7 +418,7 @@ bool exportJoint(IJointConstPtr joint,
         // axis
         xmlNodePtr axis_xml = xmlNewChild(joint_xml, NULL, BAD_CAST "axis", NULL);
         std::string bufStr;
-        ok = ok && vectorToString(axis.getDirection(), bufStr);
+        ok = ok && vectorToString(axis.getDirection(), bufStr, precision);
         xmlNewProp(axis_xml, BAD_CAST "xyz", BAD_CAST bufStr.c_str());
     }
 
@@ -450,9 +456,9 @@ bool exportJoint(IJointConstPtr joint,
             ok = ok && joint->getPosLimits(0, min, max);
         }
 
-        ok = ok && doubleToStringWithClassicLocale(min, bufStr);
+        ok = ok && doubleToStringWithClassicLocale(min, bufStr, precision);
         xmlNewProp(limit_xml, BAD_CAST "lower", BAD_CAST bufStr.c_str());
-        ok = ok && doubleToStringWithClassicLocale(max, bufStr);
+        ok = ok && doubleToStringWithClassicLocale(max, bufStr, precision);
         xmlNewProp(limit_xml, BAD_CAST "upper", BAD_CAST bufStr.c_str());
 
         // Write effort limit if available, otherwise use a high default value
@@ -461,7 +467,7 @@ bool exportJoint(IJointConstPtr joint,
         {
             effortLimit = joint->getEffortLimit(0);
         }
-        ok = ok && doubleToStringWithClassicLocale(effortLimit, bufStr);
+        ok = ok && doubleToStringWithClassicLocale(effortLimit, bufStr, precision);
         xmlNewProp(limit_xml, BAD_CAST "effort", BAD_CAST bufStr.c_str());
 
         // Write velocity limit if available, otherwise use a high default value
@@ -470,7 +476,7 @@ bool exportJoint(IJointConstPtr joint,
         {
             velocityLimit = joint->getVelocityLimit(0);
         }
-        ok = ok && doubleToStringWithClassicLocale(velocityLimit, bufStr);
+        ok = ok && doubleToStringWithClassicLocale(velocityLimit, bufStr, precision);
         xmlNewProp(limit_xml, BAD_CAST "velocity", BAD_CAST bufStr.c_str());
     }
 
@@ -481,9 +487,9 @@ bool exportJoint(IJointConstPtr joint,
         double damping = 0.0, static_friction = 0.0;
         damping = joint->getDamping(0);
         static_friction = joint->getStaticFriction(0);
-        ok = ok && doubleToStringWithClassicLocale(damping, bufStr);
+        ok = ok && doubleToStringWithClassicLocale(damping, bufStr, precision);
         xmlNewProp(dynamics_xml, BAD_CAST "damping", BAD_CAST bufStr.c_str());
-        ok = ok && doubleToStringWithClassicLocale(static_friction, bufStr);
+        ok = ok && doubleToStringWithClassicLocale(static_friction, bufStr, precision);
         xmlNewProp(dynamics_xml, BAD_CAST "friction", BAD_CAST bufStr.c_str());
     }
 
@@ -536,7 +542,8 @@ bool exportAdditionalFrame(const std::string frame_name,
                            Transform link_H_frame,
                            const std::string link_name,
                            exportAdditionalFrameDirectionOption direction_option,
-                           xmlNodePtr parent_element)
+                           xmlNodePtr parent_element,
+                           int precision = 0)
 {
     bool ok = true;
 
@@ -551,7 +558,7 @@ bool exportAdditionalFrame(const std::string frame_name,
     xmlNewProp(joint_xml, BAD_CAST "type", BAD_CAST "fixed");
 
     // origin
-    exportTransform(link_H_frame, joint_xml);
+    exportTransform(link_H_frame, joint_xml, precision);
 
     std::string parent_of_fake_joint, child_of_fake_joint;
 
@@ -607,6 +614,9 @@ bool URDFStringFromModel(const iDynTree::Model& model,
     xmlNewProp(robot, BAD_CAST "name", BAD_CAST options.robotExportedName.c_str());
     xmlDocSetRootElement(urdf_xml, robot);
 
+    // Extract precision parameter
+    int precision = options.numericalPrecision;
+
     // TODO(traversaro) : We are assuming that the model has no loops,
     //                    we should add a check for this
 
@@ -646,7 +656,8 @@ bool URDFStringFromModel(const iDynTree::Model& model,
                                       processedModel.getLinkName(
                                           processedModel.getFrameLink(baseFakeLinkFrameIndex)),
                                       FAKE_LINK_IS_PARENT,
-                                      robot);
+                                      robot,
+                                      precision);
     }
 
     // Create a Traversal
@@ -671,11 +682,17 @@ bool URDFStringFromModel(const iDynTree::Model& model,
         {
             LinkConstPtr parentLink = exportTraversal.getParentLink(trvIdx);
             IJointConstPtr parentJoint = exportTraversal.getParentJoint(trvIdx);
-            ok = ok && exportJoint(parentJoint, parentLink, visitedLink, processedModel, robot);
+            ok = ok
+                 && exportJoint(parentJoint,
+                                parentLink,
+                                visitedLink,
+                                processedModel,
+                                robot,
+                                precision);
         }
 
         // Export link
-        ok = ok && exportLink(*visitedLink, visitedLinkName, processedModel, robot);
+        ok = ok && exportLink(*visitedLink, visitedLinkName, processedModel, robot, precision);
     }
 
     // Export all the additional frames.
@@ -697,7 +714,8 @@ bool URDFStringFromModel(const iDynTree::Model& model,
                                           processedModel.getLinkName(
                                               processedModel.getFrameLink(frameIndex)),
                                           FAKE_LINK_IS_CHILD,
-                                          robot);
+                                          robot,
+                                          precision);
         }
     }
     for (auto& xmlBlob : options.xmlBlobs)

@@ -19,6 +19,7 @@ ModelExporterOptions::ModelExporterOptions()
     , exportSphericalJointsAsThreeRevoluteJoints(true)
     , sphericalJointFakeLinkPrefix("spherical_fake_")
     , sphericalJointRevoluteJointPrefix("spherical_rev_")
+    , numericalPrecision(0)
 {
 }
 
