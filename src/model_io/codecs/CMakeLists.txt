@@ -8,6 +8,7 @@ set(IDYNTREE_MODELIO_HEADERS include/iDynTree/URDFDofsImport.h
 
 set(IDYNTREE_MODELIO_PRIVATE_HEADERS include/private/URDFDocument.h
                                           include/private/SDFormatDocument.h
+                                          include/private/ModelIOFormatUtils.h
                                           include/private/InertialElement.h
                                           include/private/JointElement.h
                                           include/private/LinkElement.h
@@ -40,6 +41,11 @@ set(IDYNTREE_MODELIO_SOURCES src/URDFDofsImport.cpp
                                   src/ModelCalibrationHelper.cpp
                                   src/URDFModelExport.cpp)
 
+if(IDYNTREE_USES_NLOHMANN_JSON)
+    list(APPEND IDYNTREE_MODELIO_SOURCES src/ModelJSONImportExport.cpp)
+    list(APPEND IDYNTREE_MODELIO_PRIVATE_HEADERS include/private/ModelJSONImportExport.h)
+endif()
+
 list(APPEND IDYNTREE_MODELIO_SOURCES ${IDYNTREE_MODELIO_URDF_XMLELEMENTS_SOURCES})
 
 set(libraryname idyntree-modelio)
@@ -60,6 +66,12 @@ target_link_libraries(${libraryname} PUBLIC idyntree-core idyntree-model idyntre
 if(IDYNTREE_USES_SDFORMAT)
     target_link_libraries(${libraryname} PRIVATE sdformat::sdformat)
     target_compile_definitions(${libraryname} PRIVATE IDYNTREE_USES_SDFORMAT)
+endif()
+
+# Add nlohmann_json support if available
+if(IDYNTREE_USES_NLOHMANN_JSON)
+    target_link_libraries(${libraryname} PRIVATE nlohmann_json::nlohmann_json)
+    target_compile_definitions(${libraryname} PRIVATE IDYNTREE_USES_NLOHMANN_JSON)
 endif()
 
 # See https://stackoverflow.com/questions/38832528/transitive-target-include-directories-on-object-libraries

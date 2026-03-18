@@ -5,11 +5,15 @@
 
 #include "SDFormatDocument.h"
 #include "URDFDocument.h"
+#include "ModelIOFormatUtils.h"
+
+#ifdef IDYNTREE_USES_NLOHMANN_JSON
+#include "ModelJSONImportExport.h"
+#endif
 
 #include <iDynTree/ModelTransformers.h>
 #include <iDynTree/XMLParser.h>
 
-#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -93,26 +97,44 @@ bool ModelLoader::loadModelFromFile(const std::string& filename,
                                     const std::string& filetype,
                                     const std::vector<std::string>& packageDirs /* = {} */)
 {
-    // Determine the file type - either from explicit parameter or from file
-    // extension
-    std::string actualFileType = filetype;
+    std::string actualFileType = normalizeModelFormatName(filetype);
     if (actualFileType.empty())
     {
-        // Try to determine from extension
-        size_t dotPos = filename.rfind('.');
-        if (dotPos != std::string::npos)
-        {
-            actualFileType = filename.substr(dotPos + 1);
-            // Convert to lowercase for comparison
-            std::transform(actualFileType.begin(),
-                           actualFileType.end(),
-                           actualFileType.begin(),
-                           ::tolower);
-        }
+        actualFileType = inferModelFormatFromFilename(filename);
     }
 
-    // Check if this is an SDF file
-    if (actualFileType == "sdf" || actualFileType == "world")
+    if (!actualFileType.empty() && !isSupportedImportModelFormat(actualFileType))
+    {
+        reportError("ModelLoader",
+                    "loadModelFromFile",
+                    "Unsupported filetype. Supported import formats are: urdf, sdf, "
+                    "idyntree-model-json.");
+        return false;
+    }
+
+    if (actualFileType == "idyntree-model-json")
+    {
+#ifdef IDYNTREE_USES_NLOHMANN_JSON
+        Model parsedModel;
+        if (!modelFromJSONFile(filename, parsedModel))
+        {
+            reportError("ModelLoader",
+                        "loadModelFromFile",
+                        "Error in parsing model from idyntree-model-json file.");
+            return false;
+        }
+        return m_pimpl->setModel(parsedModel);
+#else
+        reportError("ModelLoader",
+                    "loadModelFromFile",
+                    "idyntree-model-json format detected but iDynTree was not compiled with "
+                    "nlohmann_json support. "
+                    "Please rebuild iDynTree with IDYNTREE_USES_NLOHMANN_JSON option enabled.");
+        return false;
+#endif
+    }
+
+    if (actualFileType == "sdf")
     {
 #ifdef IDYNTREE_USES_SDFORMAT
         // Use SDFormat parser
@@ -172,12 +194,23 @@ bool ModelLoader::loadModelFromString(const std::string& modelString,
                                       const std::string& filetype,
                                       const std::vector<std::string>& packageDirs /* = {} */)
 {
+    const std::string normalizedFiletype = normalizeModelFormatName(filetype);
+
+    if (!normalizedFiletype.empty() && !isSupportedImportModelFormat(normalizedFiletype))
+    {
+        reportError("ModelLoader",
+                    "loadModelFromString",
+                    "Unsupported filetype. Supported import formats are: urdf, sdf, "
+                    "idyntree-model-json.");
+        return false;
+    }
+
     // Check if this is an SDF string (look for <sdf> tag)
     bool isSDF = false;
-    if (filetype == "sdf" || filetype == "world")
+    if (normalizedFiletype == "sdf")
     {
         isSDF = true;
-    } else if (filetype.empty())
+    } else if (normalizedFiletype.empty())
     {
         // Try to detect from content
         size_t sdfPos = modelString.find("<sdf");
@@ -185,6 +218,28 @@ bool ModelLoader::loadModelFromString(const std::string& modelString,
         {
             isSDF = true;
         }
+    }
+
+    if (normalizedFiletype == "idyntree-model-json")
+    {
+#ifdef IDYNTREE_USES_NLOHMANN_JSON
+        Model parsedModel;
+        if (!modelFromJSONString(modelString, parsedModel))
+        {
+            reportError("ModelLoader",
+                        "loadModelFromString",
+                        "Error in parsing model from idyntree-model-json string.");
+            return false;
+        }
+        return m_pimpl->setModel(parsedModel);
+#else
+        reportError("ModelLoader",
+                    "loadModelFromString",
+                    "idyntree-model-json format requested but iDynTree was not compiled with "
+                    "nlohmann_json support. "
+                    "Please rebuild iDynTree with IDYNTREE_USES_NLOHMANN_JSON option enabled.");
+        return false;
+#endif
     }
 
     if (isSDF)

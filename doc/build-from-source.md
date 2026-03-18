@@ -18,6 +18,7 @@ In case they are disabled, tipically some functionality of iDynTree is not provi
 | [glfw](https://www.glfw.org/) | No | `IDYNTREE_USES_IRRLICHT` | ✔️ | ✔️ |
 | [osqp-eigen](https://github.com/robotology/osqp-eigen) | No | `IDYNTREE_USES_OSQPEIGEN` | ✔️ | ✔️ |
 | [sdformat](http://sdformat.org/) | No | `IDYNTREE_USES_SDFORMAT` | ✔️ | ❌ |
+| [nlohmann_json](https://github.com/nlohmann/json) | No | `IDYNTREE_USES_NLOHMANN_JSON` | ✔️ | ❌ |
 | [meshcat-cpp](https://github.com/ami-iit/meshcat-cpp) | No | `IDYNTREE_USES_MESHCATCPP` | ❌ | ❌ |
 
 
@@ -25,7 +26,7 @@ In case they are disabled, tipically some functionality of iDynTree is not provi
 
 If you are using conda, the dependencies of iDynTree can be installed with:
 ~~~
-conda install -c conda-forge cmake compilers make ninja pkg-config eigen libxml2-devel assimp ipopt irrlicht osqp-eigen swig python glfw libsdformat>=16.0
+conda install -c conda-forge cmake compilers make ninja pkg-config eigen libxml2-devel assimp ipopt irrlicht osqp-eigen swig python glfw libsdformat>=16.0 nlohmann_json
 ~~~
 
 ### Install dependencies with apt

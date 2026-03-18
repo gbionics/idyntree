@@ -1,9 +1,41 @@
 # How to load Models in iDynTree
 
-Most of the classes and function related to Model loading/unloading are documented in the [`iDynTree ModelIO`](http://wiki.icub.org/codyco/dox/html/idyntree/html/group__iDynTreeModelIO.html) doxygen module.
+The main two classes related to model import and export in iDynTree are:
+
+* [`iDynTree::ModelLoader`](https://gbionics.github.io/idyntree/classiDynTree_1_1ModelLoader.html): to convert models from external formats to `iDynTree::Model`
+* [`iDynTree::ModelExporter`](https://gbionics.github.io/idyntree/classiDynTree_1_1ModelExporter.html): to export `iDynTree::Model` to external formats
+
 In this document we will discuss the particular aspects of each file format supported by iDynTree for loading multibody systems information.
 
+iDynTree also provides the `idyntree-model-convert` command-line tool to convert models across supported formats.
+
+Basic usage:
+
+```bash
+idyntree-model-convert -i input_model.urdf -o output_model.json
+```
+
+You can optionally force input/output formats (for example when file extensions are ambiguous):
+
+```bash
+idyntree-model-convert \
+  -i input_model \
+  -o output_model \
+  --input-format urdf \
+  --output-format idyntree-model-json
+```
+
+Currently, input formats are `urdf`, `sdf`, and `idyntree-model-json`, while output formats are `urdf` and `idyntree-model-json`.
+
+
+| Format | Section |
+| --- | --- |
+| `urdf` | [URDF models](#urdf-models) |
+| `sdf` | [SDFormat models](#sdformat-models) |
+| `idyntree-model-json` | [iDynTree model JSON](#idyntree-model-json) |
+
 ## URDF models
+
 The main format used by iDynTree to load multibody models is the [URDF format](http://wiki.ros.org/urdf), originally developed in the ROS project.
 
 iDynTree follows the [URDF specification](http://wiki.ros.org/urdf/XML/model) as much as possible.
@@ -105,7 +137,7 @@ iDynTree also supports loading robot models from the [SDFormat (Simulation Descr
 
 ### Usage
 
-The `ModelLoader` class automatically detects SDFormat files based on file extension (`.sdf` or `.world`):
+The `ModelLoader` class automatically detects SDFormat files based on file extension (`.sdf` or `.world`), using the canonical format name `sdf`:
 
 ```cpp
 iDynTree::ModelLoader loader;
@@ -213,3 +245,35 @@ The following SDFormat features are not yet supported:
 - Additional joint types (ball, universal, screw)
 - Nested model hierarchies
 - Visual and material properties (colors, textures)
+
+## iDynTree model JSON
+
+iDynTree also supports loading and exporting models via a iDynTree-specific JSON format named `idyntree-model-json`.
+
+As this format is mainly meant for dumping the memory state of an `iDynTree::Model`, it is not meant to provide backward compatibility, so every change in the `.json` format will be indicated by a bump in the integer value the `idyntree_model_json_version` top-level json element, and so model exported in older versions of iDynTree may not be loaded in future versions of iDynTree.
+
+This support requires `nlohmann_json` and must be enabled at build time with
+the `IDYNTREE_USES_NLOHMANN_JSON` CMake option.
+
+### Usage
+
+For files, `ModelLoader` auto-detects this format from the `.json` extension:
+
+```cpp
+iDynTree::ModelLoader loader;
+bool ok = loader.loadModelFromFile("robot.json"); // Auto-detected as idyntree-model-json
+```
+
+You can also explicitly specify the format:
+
+```cpp
+bool ok = loader.loadModelFromFile("robot.json", "idyntree-model-json");
+```
+
+For export:
+
+```cpp
+iDynTree::ModelExporter exporter;
+exporter.init(model);
+bool ok = exporter.exportModelToFile("robot.json", "idyntree-model-json");
+```
