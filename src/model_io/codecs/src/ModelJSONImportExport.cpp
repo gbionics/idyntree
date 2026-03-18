@@ -176,20 +176,17 @@ static nlohmann::json solidShapeToJSON(const SolidShape& shape)
     {
         shapeJSON["type"] = "sphere";
         shapeJSON["radius"] = shape.asSphere()->getRadius();
-    }
-    else if (shape.isBox())
+    } else if (shape.isBox())
     {
         shapeJSON["type"] = "box";
-        shapeJSON["size"]
-            = nlohmann::json::array({shape.asBox()->getX(), shape.asBox()->getY(), shape.asBox()->getZ()});
-    }
-    else if (shape.isCylinder())
+        shapeJSON["size"] = nlohmann::json::array(
+            {shape.asBox()->getX(), shape.asBox()->getY(), shape.asBox()->getZ()});
+    } else if (shape.isCylinder())
     {
         shapeJSON["type"] = "cylinder";
         shapeJSON["length"] = shape.asCylinder()->getLength();
         shapeJSON["radius"] = shape.asCylinder()->getRadius();
-    }
-    else if (shape.isExternalMesh())
+    } else if (shape.isExternalMesh())
     {
         shapeJSON["type"] = "external_mesh";
         shapeJSON["filename"] = shape.asExternalMesh()->getFilename();
@@ -211,30 +208,26 @@ static bool addSolidShapeToModel(const nlohmann::json& shapeJSON,
         Sphere sphere;
         sphere.setRadius(shapeJSON.at("radius").get<double>());
         shape = sphere.clone();
-    }
-    else if (type == "box")
+    } else if (type == "box")
     {
         Box box;
         box.setX(shapeJSON.at("size").at(0).get<double>());
         box.setY(shapeJSON.at("size").at(1).get<double>());
         box.setZ(shapeJSON.at("size").at(2).get<double>());
         shape = box.clone();
-    }
-    else if (type == "cylinder")
+    } else if (type == "cylinder")
     {
         Cylinder cylinder;
         cylinder.setLength(shapeJSON.at("length").get<double>());
         cylinder.setRadius(shapeJSON.at("radius").get<double>());
         shape = cylinder.clone();
-    }
-    else if (type == "external_mesh")
+    } else if (type == "external_mesh")
     {
         ExternalMesh mesh;
         mesh.setFilename(shapeJSON.at("filename").get<std::string>());
         mesh.setScale(vector3FromJSON(shapeJSON.at("scale")));
         shape = mesh.clone();
-    }
-    else
+    } else
     {
         reportError("ModelJSONExport", "addSolidShapeToModel", "Unknown solid shape type.");
         return false;
@@ -255,7 +248,8 @@ static bool addSolidShapeToModel(const nlohmann::json& shapeJSON,
     return true;
 }
 
-static nlohmann::json modelSolidShapesToJSON(const Model& model, const ModelSolidShapes& modelShapes)
+static nlohmann::json
+modelSolidShapesToJSON(const Model& model, const ModelSolidShapes& modelShapes)
 {
     nlohmann::json linkShapesJSON = nlohmann::json::array();
     const auto& allLinkShapes = modelShapes.getLinkSolidShapes();
@@ -319,8 +313,7 @@ static nlohmann::json sensorToJSON(const Sensor& sensor, const Model& model)
 
     switch (sensor.getSensorType())
     {
-    case SIX_AXIS_FORCE_TORQUE:
-    {
+    case SIX_AXIS_FORCE_TORQUE: {
         const auto* ftSensor = dynamic_cast<const SixAxisForceTorqueSensor*>(&sensor);
         sensorJSON["type"] = "six_axis_force_torque";
         sensorJSON["parent_joint"] = ftSensor->getParentJoint();
@@ -336,24 +329,21 @@ static nlohmann::json sensorToJSON(const Sensor& sensor, const Model& model)
         sensorJSON["second_link_H_sensor"] = transformToJSON(secondLink_H_sensor);
         break;
     }
-    case ACCELEROMETER:
-    {
+    case ACCELEROMETER: {
         const auto* accelerometer = dynamic_cast<const AccelerometerSensor*>(&sensor);
         sensorJSON["type"] = "accelerometer";
         sensorJSON["parent_link"] = accelerometer->getParentLink();
         sensorJSON["link_H_sensor"] = transformToJSON(accelerometer->getLinkSensorTransform());
         break;
     }
-    case GYROSCOPE:
-    {
+    case GYROSCOPE: {
         const auto* gyroscope = dynamic_cast<const GyroscopeSensor*>(&sensor);
         sensorJSON["type"] = "gyroscope";
         sensorJSON["parent_link"] = gyroscope->getParentLink();
         sensorJSON["link_H_sensor"] = transformToJSON(gyroscope->getLinkSensorTransform());
         break;
     }
-    case THREE_AXIS_ANGULAR_ACCELEROMETER:
-    {
+    case THREE_AXIS_ANGULAR_ACCELEROMETER: {
         const auto* angularAccelerometer
             = dynamic_cast<const ThreeAxisAngularAccelerometerSensor*>(&sensor);
         sensorJSON["type"] = "three_axis_angular_accelerometer";
@@ -362,10 +352,8 @@ static nlohmann::json sensorToJSON(const Sensor& sensor, const Model& model)
             = transformToJSON(angularAccelerometer->getLinkSensorTransform());
         break;
     }
-    case THREE_AXIS_FORCE_TORQUE_CONTACT:
-    {
-        const auto* contactSensor
-            = dynamic_cast<const ThreeAxisForceTorqueContactSensor*>(&sensor);
+    case THREE_AXIS_FORCE_TORQUE_CONTACT: {
+        const auto* contactSensor = dynamic_cast<const ThreeAxisForceTorqueContactSensor*>(&sensor);
         sensorJSON["type"] = "three_axis_force_torque_contact";
         sensorJSON["parent_link"] = contactSensor->getParentLink();
         sensorJSON["link_H_sensor"] = transformToJSON(contactSensor->getLinkSensorTransform());
@@ -406,7 +394,8 @@ static bool addSensorToModel(const nlohmann::json& sensorJSON, Model& model)
         {
             reportError("ModelJSONExport",
                         "addSensorToModel",
-                        "Failed to resolve joint or link referenced by six axis force torque sensor.");
+                        "Failed to resolve joint or link referenced by six axis force torque "
+                        "sensor.");
             return false;
         }
 
@@ -419,7 +408,8 @@ static bool addSensorToModel(const nlohmann::json& sensorJSON, Model& model)
         sensor.setFirstLinkSensorTransform(firstLinkIndex,
                                            transformFromJSON(sensorJSON.at("first_link_H_sensor")));
         sensor.setSecondLinkSensorTransform(secondLinkIndex,
-                                            transformFromJSON(sensorJSON.at("second_link_H_sensor")));
+                                            transformFromJSON(sensorJSON.at("second_link_H_"
+                                                                            "sensor")));
         sensor.setAppliedWrenchLink(appliedWrenchLinkIndex);
         return model.sensors().addSensor(sensor) >= 0;
     }
@@ -483,8 +473,7 @@ static bool addSensorToModel(const nlohmann::json& sensorJSON, Model& model)
 }
 
 // Limits for 1-DOF joints
-template <typename JointT>
-static nlohmann::json oneDOFLimitsToJSON(const JointT& joint)
+template <typename JointT> static nlohmann::json oneDOFLimitsToJSON(const JointT& joint)
 {
     nlohmann::json lim;
     lim["has_position_limits"] = joint.hasPosLimits();
@@ -503,12 +492,11 @@ static nlohmann::json oneDOFLimitsToJSON(const JointT& joint)
 }
 
 // Dynamics for 1-DOF joints
-template <typename JointT>
-static nlohmann::json oneDOFDynamicsToJSON(const JointT& joint)
+template <typename JointT> static nlohmann::json oneDOFDynamicsToJSON(const JointT& joint)
 {
     nlohmann::json dyn;
     dyn["type"] = (joint.getJointDynamicsType() == URDFJointDynamics) ? "URDFJointDynamics"
-                                                                       : "NoJointDynamics";
+                                                                      : "NoJointDynamics";
     dyn["damping"] = joint.getDamping(0);
     dyn["static_friction"] = joint.getStaticFriction(0);
     return dyn;
@@ -555,7 +543,7 @@ static nlohmann::json sphericalDynamicsToJSON(const SphericalJoint& joint)
 {
     nlohmann::json dyn;
     dyn["type"] = (joint.getJointDynamicsType() == URDFJointDynamics) ? "URDFJointDynamics"
-                                                                       : "NoJointDynamics";
+                                                                      : "NoJointDynamics";
     nlohmann::json dampingArr = nlohmann::json::array();
     nlohmann::json frictionArr = nlohmann::json::array();
     for (size_t i = 0; i < 3; i++)
@@ -631,30 +619,26 @@ bool modelToJSONString(const Model& model, std::string& jsonString)
         if (fixedJoint)
         {
             jointJSON["type"] = "fixed";
-        }
-        else if (revoluteJoint)
+        } else if (revoluteJoint)
         {
             jointJSON["type"] = "revolute";
             // axis expressed in child (link2) frame
             jointJSON["axis"] = axisToJSON(revoluteJoint->getAxis(link2, link1));
             jointJSON["limits"] = oneDOFLimitsToJSON(*revoluteJoint);
             jointJSON["dynamics"] = oneDOFDynamicsToJSON(*revoluteJoint);
-        }
-        else if (prismaticJoint)
+        } else if (prismaticJoint)
         {
             jointJSON["type"] = "prismatic";
             jointJSON["axis"] = axisToJSON(prismaticJoint->getAxis(link2, link1));
             jointJSON["limits"] = oneDOFLimitsToJSON(*prismaticJoint);
             jointJSON["dynamics"] = oneDOFDynamicsToJSON(*prismaticJoint);
-        }
-        else if (revoluteSO2Joint)
+        } else if (revoluteSO2Joint)
         {
             jointJSON["type"] = "revolute_so2";
             jointJSON["axis"] = axisToJSON(revoluteSO2Joint->getAxis(link2, link1));
             jointJSON["limits"] = oneDOFLimitsToJSON(*revoluteSO2Joint);
             jointJSON["dynamics"] = oneDOFDynamicsToJSON(*revoluteSO2Joint);
-        }
-        else if (sphericalJoint)
+        } else if (sphericalJoint)
         {
             jointJSON["type"] = "spherical";
             // joint center relative to link1 (parent)
@@ -662,8 +646,7 @@ bool modelToJSONString(const Model& model, std::string& jsonString)
                 = positionToJSON(sphericalJoint->getJointCenter(link1));
             jointJSON["limits"] = sphericalLimitsToJSON(*sphericalJoint);
             jointJSON["dynamics"] = sphericalDynamicsToJSON(*sphericalJoint);
-        }
-        else
+        } else
         {
             reportError("ModelJSONExport",
                         "modelToJSONString",
@@ -752,8 +735,7 @@ bool modelToJSONFile(const Model& model, const std::string& filename)
 // ─── import ──────────────────────────────────────────────────────────────────
 
 // Helper: deserialize 1-DOF limits
-template <typename JointT>
-static bool applyOneDOFLimits(const nlohmann::json& limJ, JointT& joint)
+template <typename JointT> static bool applyOneDOFLimits(const nlohmann::json& limJ, JointT& joint)
 {
     if (limJ.at("has_position_limits").get<bool>())
     {
@@ -786,7 +768,7 @@ static void applyOneDOFDynamics(const nlohmann::json& dynJ, JointT& joint)
 {
     const std::string dynType = dynJ.at("type").get<std::string>();
     joint.setJointDynamicsType(dynType == "URDFJointDynamics" ? URDFJointDynamics
-                                                               : NoJointDynamics);
+                                                              : NoJointDynamics);
     joint.setDamping(0, dynJ.at("damping").get<double>());
     joint.setStaticFriction(0, dynJ.at("static_friction").get<double>());
 }
@@ -797,8 +779,7 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
     try
     {
         root = nlohmann::json::parse(jsonString);
-    }
-    catch (const nlohmann::json::parse_error& e)
+    } catch (const nlohmann::json::parse_error& e)
     {
         reportError("ModelJSONExport",
                     "modelFromJSONString",
@@ -820,8 +801,7 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
         reportError("ModelJSONExport",
                     "modelFromJSONString",
                     ("Unsupported idyntree_model_json_version: " + std::to_string(version)
-                     + ". Supported version: "
-                     + std::to_string(IDYNTREE_MODEL_JSON_FORMAT_VERSION))
+                     + ". Supported version: " + std::to_string(IDYNTREE_MODEL_JSON_FORMAT_VERSION))
                         .c_str());
         return false;
     }
@@ -865,8 +845,7 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
         {
             reportError("ModelJSONExport",
                         "modelFromJSONString",
-                        ("Joint '" + name + "': parent link not found: " + parentLinkName)
-                            .c_str());
+                        ("Joint '" + name + "': parent link not found: " + parentLinkName).c_str());
             return false;
         }
         const LinkIndex childIdx = model.getLinkIndex(childLinkName);
@@ -885,8 +864,7 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
         {
             FixedJoint fixedJoint(parentIdx, childIdx, restTransform);
             model.addJoint(name, &fixedJoint);
-        }
-        else if (type == "revolute")
+        } else if (type == "revolute")
         {
             RevoluteJoint revJoint;
             revJoint.setAttachedLinks(parentIdx, childIdx);
@@ -902,8 +880,7 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
             }
             applyOneDOFDynamics(jointJSON.at("dynamics"), revJoint);
             model.addJoint(name, &revJoint);
-        }
-        else if (type == "prismatic")
+        } else if (type == "prismatic")
         {
             PrismaticJoint prismJoint;
             prismJoint.setAttachedLinks(parentIdx, childIdx);
@@ -919,8 +896,7 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
             }
             applyOneDOFDynamics(jointJSON.at("dynamics"), prismJoint);
             model.addJoint(name, &prismJoint);
-        }
-        else if (type == "revolute_so2")
+        } else if (type == "revolute_so2")
         {
             RevoluteSO2Joint revSO2Joint;
             revSO2Joint.setAttachedLinks(parentIdx, childIdx);
@@ -936,8 +912,7 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
             }
             applyOneDOFDynamics(jointJSON.at("dynamics"), revSO2Joint);
             model.addJoint(name, &revSO2Joint);
-        }
-        else if (type == "spherical")
+        } else if (type == "spherical")
         {
             SphericalJoint sphericalJoint;
             sphericalJoint.setAttachedLinks(parentIdx, childIdx);
@@ -952,8 +927,9 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
                 const auto& minArr = limJSON.at("min_position");
                 const auto& maxArr = limJSON.at("max_position");
                 for (size_t i = 0; i < 3; i++)
-                    sphericalJoint.setPosLimits(
-                        i, minArr.at(i).get<double>(), maxArr.at(i).get<double>());
+                    sphericalJoint.setPosLimits(i,
+                                                minArr.at(i).get<double>(),
+                                                maxArr.at(i).get<double>());
             }
             if (limJSON.at("has_effort_limits").get<bool>())
             {
@@ -983,8 +959,7 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
             }
 
             model.addJoint(name, &sphericalJoint);
-        }
-        else
+        } else
         {
             reportError("ModelJSONExport",
                         "modelFromJSONString",
@@ -1003,7 +978,9 @@ bool modelFromJSONString(const std::string& jsonString, Model& model)
     }
 
     if (root.contains("visual_solid_shapes")
-        && !modelSolidShapesFromJSON(root.at("visual_solid_shapes"), model, model.visualSolidShapes()))
+        && !modelSolidShapesFromJSON(root.at("visual_solid_shapes"),
+                                     model,
+                                     model.visualSolidShapes()))
     {
         return false;
     }

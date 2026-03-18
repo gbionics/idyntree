@@ -10,8 +10,8 @@
  *  3. Verify that all attributes of the original and round-tripped model match.
  */
 
-#include "ModelJSONImportExport.h"
 #include "JSONModelRoundTripTestUtils.h"
+#include "ModelJSONImportExport.h"
 #include "testModels.h"
 
 #include <iDynTree/Model.h>

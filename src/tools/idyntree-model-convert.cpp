@@ -54,8 +54,7 @@ int main(int argc, char** argv)
     std::string outputFormat;
     if (cmd.exist("output-format"))
     {
-        outputFormat
-            = iDynTree::normalizeModelFormatName(cmd.get<std::string>("output-format"));
+        outputFormat = iDynTree::normalizeModelFormatName(cmd.get<std::string>("output-format"));
     } else
     {
         outputFormat = iDynTree::inferModelFormatFromFilename(outputPath);

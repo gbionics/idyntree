@@ -149,7 +149,8 @@ public:
      * @param filetype type of the model to load. Supported values are:
      *                 `urdf`, `sdf`, `idyntree-model-json`.
      *                 If empty, the format is auto-detected from file extension
-     *                 (`.urdf` -> `urdf`, `.sdf`/`.world` -> `sdf`, `.json` -> `idyntree-model-json`).
+     *                 (`.urdf` -> `urdf`, `.sdf`/`.world` -> `sdf`, `.json` ->
+     * `idyntree-model-json`).
      * @param packageDirs a vector containing the different directories where to
      *                   search for model meshes
      * @note In case no package is specified ModelLoader will look for the meshes

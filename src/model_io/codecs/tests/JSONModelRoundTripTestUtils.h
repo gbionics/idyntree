@@ -26,9 +26,8 @@ inline void assertJSONRoundTripTransformsAreEqual(const Transform& lhs,
     ASSERT_EQUAL_MATRIX_TOL(lhs.asHomogeneousTransform(), rhs.asHomogeneousTransform(), tol);
 }
 
-inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
-                                                 const Model& actual,
-                                                 double tol = 1e-10)
+inline void
+assertJSONRoundTripBaseModelAreEqual(const Model& expected, const Model& actual, double tol = 1e-10)
 {
     ASSERT_EQUAL_DOUBLE(expected.getNrOfLinks(), actual.getNrOfLinks());
     ASSERT_EQUAL_DOUBLE(expected.getNrOfJoints(), actual.getNrOfJoints());
@@ -39,7 +38,8 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
     ASSERT_EQUAL_STRING(expected.getLinkName(expected.getDefaultBaseLink()),
                         actual.getLinkName(actual.getDefaultBaseLink()));
 
-    for (LinkIndex expectedLinkIdx = 0; expectedLinkIdx < expected.getNrOfLinks(); ++expectedLinkIdx)
+    for (LinkIndex expectedLinkIdx = 0; expectedLinkIdx < expected.getNrOfLinks();
+         ++expectedLinkIdx)
     {
         const std::string& linkName = expected.getLinkName(expectedLinkIdx);
         const LinkIndex actualLinkIdx = actual.getLinkIndex(linkName);
@@ -51,7 +51,8 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
                                 tol);
     }
 
-    for (JointIndex expectedJointIdx = 0; expectedJointIdx < expected.getNrOfJoints(); ++expectedJointIdx)
+    for (JointIndex expectedJointIdx = 0; expectedJointIdx < expected.getNrOfJoints();
+         ++expectedJointIdx)
     {
         const std::string& jointName = expected.getJointName(expectedJointIdx);
         const JointIndex actualJointIdx = actual.getJointIndex(jointName);
@@ -75,9 +76,9 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
         const LinkIndex actualLink2 = actualJoint->getSecondAttachedLink();
 
         assertJSONRoundTripTransformsAreEqual(expectedJoint->getRestTransform(expectedLink1,
-                                                                               expectedLink2),
+                                                                              expectedLink2),
                                               actualJoint->getRestTransform(actualLink1,
-                                                                             actualLink2),
+                                                                            actualLink2),
                                               tol);
 
         ASSERT_EQUAL_DOUBLE(expectedJoint->hasPosLimits(), actualJoint->hasPosLimits());
@@ -135,8 +136,7 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
         if (expectedFixed)
         {
             ASSERT_IS_TRUE(dynamic_cast<const FixedJoint*>(actualJoint) != nullptr);
-        }
-        else if (expectedRevolute)
+        } else if (expectedRevolute)
         {
             const auto* actualRevolute = dynamic_cast<const RevoluteJoint*>(actualJoint);
             ASSERT_IS_TRUE(actualRevolute != nullptr);
@@ -149,10 +149,11 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
                 ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getDirection()(i),
                                         actualAxis.getDirection()(i),
                                         tol);
-                ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getOrigin()(i), actualAxis.getOrigin()(i), tol);
+                ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getOrigin()(i),
+                                        actualAxis.getOrigin()(i),
+                                        tol);
             }
-        }
-        else if (expectedPrismatic)
+        } else if (expectedPrismatic)
         {
             const auto* actualPrismatic = dynamic_cast<const PrismaticJoint*>(actualJoint);
             ASSERT_IS_TRUE(actualPrismatic != nullptr);
@@ -165,10 +166,11 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
                 ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getDirection()(i),
                                         actualAxis.getDirection()(i),
                                         tol);
-                ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getOrigin()(i), actualAxis.getOrigin()(i), tol);
+                ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getOrigin()(i),
+                                        actualAxis.getOrigin()(i),
+                                        tol);
             }
-        }
-        else if (expectedRevoluteSO2)
+        } else if (expectedRevoluteSO2)
         {
             const auto* actualRevoluteSO2 = dynamic_cast<const RevoluteSO2Joint*>(actualJoint);
             ASSERT_IS_TRUE(actualRevoluteSO2 != nullptr);
@@ -181,10 +183,11 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
                 ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getDirection()(i),
                                         actualAxis.getDirection()(i),
                                         tol);
-                ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getOrigin()(i), actualAxis.getOrigin()(i), tol);
+                ASSERT_EQUAL_DOUBLE_TOL(expectedAxis.getOrigin()(i),
+                                        actualAxis.getOrigin()(i),
+                                        tol);
             }
-        }
-        else if (expectedSpherical)
+        } else if (expectedSpherical)
         {
             const auto* actualSpherical = dynamic_cast<const SphericalJoint*>(actualJoint);
             ASSERT_IS_TRUE(actualSpherical != nullptr);
@@ -195,14 +198,15 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
                                         actualSpherical->getJointCenter(actualLink1)(i),
                                         tol);
             }
-        }
-        else
+        } else
         {
             ASSERT_IS_TRUE(false);
         }
     }
 
-    for (FrameIndex expectedFrameIdx = expected.getNrOfLinks(); expectedFrameIdx < expected.getNrOfFrames(); ++expectedFrameIdx)
+    for (FrameIndex expectedFrameIdx = expected.getNrOfLinks();
+         expectedFrameIdx < expected.getNrOfFrames();
+         ++expectedFrameIdx)
     {
         const std::string& frameName = expected.getFrameName(expectedFrameIdx);
         const FrameIndex actualFrameIdx = actual.getFrameIndex(frameName);
@@ -217,9 +221,8 @@ inline void assertJSONRoundTripBaseModelAreEqual(const Model& expected,
     }
 }
 
-inline void assertJSONRoundTripVector3AreEqual(const Vector3& lhs,
-                                               const Vector3& rhs,
-                                               double tol = 1e-10)
+inline void
+assertJSONRoundTripVector3AreEqual(const Vector3& lhs, const Vector3& rhs, double tol = 1e-10)
 {
     for (int i = 0; i < 3; ++i)
     {
@@ -227,9 +230,8 @@ inline void assertJSONRoundTripVector3AreEqual(const Vector3& lhs,
     }
 }
 
-inline void assertJSONRoundTripVector4AreEqual(const Vector4& lhs,
-                                               const Vector4& rhs,
-                                               double tol = 1e-10)
+inline void
+assertJSONRoundTripVector4AreEqual(const Vector4& lhs, const Vector4& rhs, double tol = 1e-10)
 {
     for (int i = 0; i < 4; ++i)
     {
@@ -281,22 +283,26 @@ inline void assertJSONRoundTripSolidShapesAreEqual(const SolidShape& expected,
 
     if (expected.isSphere())
     {
-        ASSERT_EQUAL_DOUBLE_TOL(expected.asSphere()->getRadius(), actual.asSphere()->getRadius(), tol);
-    }
-    else if (expected.isBox())
+        ASSERT_EQUAL_DOUBLE_TOL(expected.asSphere()->getRadius(),
+                                actual.asSphere()->getRadius(),
+                                tol);
+    } else if (expected.isBox())
     {
         ASSERT_EQUAL_DOUBLE_TOL(expected.asBox()->getX(), actual.asBox()->getX(), tol);
         ASSERT_EQUAL_DOUBLE_TOL(expected.asBox()->getY(), actual.asBox()->getY(), tol);
         ASSERT_EQUAL_DOUBLE_TOL(expected.asBox()->getZ(), actual.asBox()->getZ(), tol);
-    }
-    else if (expected.isCylinder())
+    } else if (expected.isCylinder())
     {
-        ASSERT_EQUAL_DOUBLE_TOL(expected.asCylinder()->getLength(), actual.asCylinder()->getLength(), tol);
-        ASSERT_EQUAL_DOUBLE_TOL(expected.asCylinder()->getRadius(), actual.asCylinder()->getRadius(), tol);
-    }
-    else if (expected.isExternalMesh())
+        ASSERT_EQUAL_DOUBLE_TOL(expected.asCylinder()->getLength(),
+                                actual.asCylinder()->getLength(),
+                                tol);
+        ASSERT_EQUAL_DOUBLE_TOL(expected.asCylinder()->getRadius(),
+                                actual.asCylinder()->getRadius(),
+                                tol);
+    } else if (expected.isExternalMesh())
     {
-        ASSERT_EQUAL_STRING(expected.asExternalMesh()->getFilename(), actual.asExternalMesh()->getFilename());
+        ASSERT_EQUAL_STRING(expected.asExternalMesh()->getFilename(),
+                            actual.asExternalMesh()->getFilename());
         assertJSONRoundTripVector3AreEqual(expected.asExternalMesh()->getScale(),
                                            actual.asExternalMesh()->getScale(),
                                            tol);
@@ -314,7 +320,8 @@ inline void assertJSONRoundTripModelSolidShapesAreEqual(const Model& expectedMod
 
     ASSERT_EQUAL_DOUBLE(expectedLinkShapes.size(), actualLinkShapes.size());
 
-    for (LinkIndex expectedLinkIdx = 0; expectedLinkIdx < expectedModel.getNrOfLinks(); ++expectedLinkIdx)
+    for (LinkIndex expectedLinkIdx = 0; expectedLinkIdx < expectedModel.getNrOfLinks();
+         ++expectedLinkIdx)
     {
         const std::string& linkName = expectedModel.getLinkName(expectedLinkIdx);
         const LinkIndex actualLinkIdx = actualModel.getLinkIndex(linkName);
@@ -323,7 +330,8 @@ inline void assertJSONRoundTripModelSolidShapesAreEqual(const Model& expectedMod
         ASSERT_EQUAL_DOUBLE(expectedLinkShapes[expectedLinkIdx].size(),
                             actualLinkShapes[actualLinkIdx].size());
 
-        for (size_t shapeIndex = 0; shapeIndex < expectedLinkShapes[expectedLinkIdx].size(); ++shapeIndex)
+        for (size_t shapeIndex = 0; shapeIndex < expectedLinkShapes[expectedLinkIdx].size();
+             ++shapeIndex)
         {
             ASSERT_IS_TRUE(expectedLinkShapes[expectedLinkIdx][shapeIndex] != nullptr);
             ASSERT_IS_TRUE(actualLinkShapes[actualLinkIdx][shapeIndex] != nullptr);
@@ -361,7 +369,8 @@ inline void assertJSONRoundTripSensorsAreEqual(const Model& expectedModel,
 
             if (sensorType == SIX_AXIS_FORCE_TORQUE)
             {
-                const auto* expectedFT = dynamic_cast<const SixAxisForceTorqueSensor*>(expectedSensor);
+                const auto* expectedFT
+                    = dynamic_cast<const SixAxisForceTorqueSensor*>(expectedSensor);
                 const auto* actualFT = dynamic_cast<const SixAxisForceTorqueSensor*>(actualSensor);
                 ASSERT_IS_TRUE(expectedFT != nullptr);
                 ASSERT_IS_TRUE(actualFT != nullptr);
@@ -391,30 +400,33 @@ inline void assertJSONRoundTripSensorsAreEqual(const Model& expectedModel,
                 assertJSONRoundTripTransformsAreEqual(expectedSecondLink_H_sensor,
                                                       actualSecondLink_H_sensor,
                                                       tol);
-            }
-            else if (sensorType == ACCELEROMETER)
+            } else if (sensorType == ACCELEROMETER)
             {
-                const auto* expectedAccelerometer = dynamic_cast<const AccelerometerSensor*>(expectedSensor);
-                const auto* actualAccelerometer = dynamic_cast<const AccelerometerSensor*>(actualSensor);
+                const auto* expectedAccelerometer
+                    = dynamic_cast<const AccelerometerSensor*>(expectedSensor);
+                const auto* actualAccelerometer
+                    = dynamic_cast<const AccelerometerSensor*>(actualSensor);
                 ASSERT_IS_TRUE(expectedAccelerometer != nullptr);
                 ASSERT_IS_TRUE(actualAccelerometer != nullptr);
-                ASSERT_EQUAL_STRING(expectedAccelerometer->getParentLink(), actualAccelerometer->getParentLink());
-                assertJSONRoundTripTransformsAreEqual(expectedAccelerometer->getLinkSensorTransform(),
+                ASSERT_EQUAL_STRING(expectedAccelerometer->getParentLink(),
+                                    actualAccelerometer->getParentLink());
+                assertJSONRoundTripTransformsAreEqual(expectedAccelerometer
+                                                          ->getLinkSensorTransform(),
                                                       actualAccelerometer->getLinkSensorTransform(),
                                                       tol);
-            }
-            else if (sensorType == GYROSCOPE)
+            } else if (sensorType == GYROSCOPE)
             {
-                const auto* expectedGyroscope = dynamic_cast<const GyroscopeSensor*>(expectedSensor);
+                const auto* expectedGyroscope
+                    = dynamic_cast<const GyroscopeSensor*>(expectedSensor);
                 const auto* actualGyroscope = dynamic_cast<const GyroscopeSensor*>(actualSensor);
                 ASSERT_IS_TRUE(expectedGyroscope != nullptr);
                 ASSERT_IS_TRUE(actualGyroscope != nullptr);
-                ASSERT_EQUAL_STRING(expectedGyroscope->getParentLink(), actualGyroscope->getParentLink());
+                ASSERT_EQUAL_STRING(expectedGyroscope->getParentLink(),
+                                    actualGyroscope->getParentLink());
                 assertJSONRoundTripTransformsAreEqual(expectedGyroscope->getLinkSensorTransform(),
                                                       actualGyroscope->getLinkSensorTransform(),
                                                       tol);
-            }
-            else if (sensorType == THREE_AXIS_ANGULAR_ACCELEROMETER)
+            } else if (sensorType == THREE_AXIS_ANGULAR_ACCELEROMETER)
             {
                 const auto* expectedAngularAccelerometer
                     = dynamic_cast<const ThreeAxisAngularAccelerometerSensor*>(expectedSensor);
@@ -424,11 +436,12 @@ inline void assertJSONRoundTripSensorsAreEqual(const Model& expectedModel,
                 ASSERT_IS_TRUE(actualAngularAccelerometer != nullptr);
                 ASSERT_EQUAL_STRING(expectedAngularAccelerometer->getParentLink(),
                                     actualAngularAccelerometer->getParentLink());
-                assertJSONRoundTripTransformsAreEqual(expectedAngularAccelerometer->getLinkSensorTransform(),
-                                                      actualAngularAccelerometer->getLinkSensorTransform(),
+                assertJSONRoundTripTransformsAreEqual(expectedAngularAccelerometer
+                                                          ->getLinkSensorTransform(),
+                                                      actualAngularAccelerometer
+                                                          ->getLinkSensorTransform(),
                                                       tol);
-            }
-            else if (sensorType == THREE_AXIS_FORCE_TORQUE_CONTACT)
+            } else if (sensorType == THREE_AXIS_FORCE_TORQUE_CONTACT)
             {
                 const auto* expectedContact
                     = dynamic_cast<const ThreeAxisForceTorqueContactSensor*>(expectedSensor);
@@ -436,20 +449,27 @@ inline void assertJSONRoundTripSensorsAreEqual(const Model& expectedModel,
                     = dynamic_cast<const ThreeAxisForceTorqueContactSensor*>(actualSensor);
                 ASSERT_IS_TRUE(expectedContact != nullptr);
                 ASSERT_IS_TRUE(actualContact != nullptr);
-                ASSERT_EQUAL_STRING(expectedContact->getParentLink(), actualContact->getParentLink());
+                ASSERT_EQUAL_STRING(expectedContact->getParentLink(),
+                                    actualContact->getParentLink());
                 assertJSONRoundTripTransformsAreEqual(expectedContact->getLinkSensorTransform(),
                                                       actualContact->getLinkSensorTransform(),
                                                       tol);
 
-                const std::vector<Position> expectedLoadCellLocations = expectedContact->getLoadCellLocations();
-                const std::vector<Position> actualLoadCellLocations = actualContact->getLoadCellLocations();
-                ASSERT_EQUAL_DOUBLE(expectedLoadCellLocations.size(), actualLoadCellLocations.size());
-                for (size_t loadCellIndex = 0; loadCellIndex < expectedLoadCellLocations.size(); ++loadCellIndex)
+                const std::vector<Position> expectedLoadCellLocations
+                    = expectedContact->getLoadCellLocations();
+                const std::vector<Position> actualLoadCellLocations
+                    = actualContact->getLoadCellLocations();
+                ASSERT_EQUAL_DOUBLE(expectedLoadCellLocations.size(),
+                                    actualLoadCellLocations.size());
+                for (size_t loadCellIndex = 0; loadCellIndex < expectedLoadCellLocations.size();
+                     ++loadCellIndex)
                 {
                     for (int coordinateIndex = 0; coordinateIndex < 3; ++coordinateIndex)
                     {
-                        ASSERT_EQUAL_DOUBLE_TOL(expectedLoadCellLocations[loadCellIndex](coordinateIndex),
-                                                actualLoadCellLocations[loadCellIndex](coordinateIndex),
+                        ASSERT_EQUAL_DOUBLE_TOL(expectedLoadCellLocations[loadCellIndex](
+                                                    coordinateIndex),
+                                                actualLoadCellLocations[loadCellIndex](
+                                                    coordinateIndex),
                                                 tol);
                     }
                 }

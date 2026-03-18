@@ -3,9 +3,9 @@
 
 #include "iDynTree/ModelLoader.h"
 
+#include "ModelIOFormatUtils.h"
 #include "SDFormatDocument.h"
 #include "URDFDocument.h"
-#include "ModelIOFormatUtils.h"
 
 #ifdef IDYNTREE_USES_NLOHMANN_JSON
 #include "ModelJSONImportExport.h"
