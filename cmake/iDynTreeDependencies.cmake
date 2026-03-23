@@ -96,6 +96,7 @@ idyntree_handle_dependency(WORHP DO_NOT_SILENTLY_SEARCH)
 # NO_MODULE passed to avoid that the Findassimp of YCM is used instead, https://github.com/robotology/idyntree/pull/832
 idyntree_handle_dependency(assimp DO_NOT_SILENTLY_SEARCH NO_MODULE MAIN_TARGET assimp::assimp)
 idyntree_handle_dependency(sdformat DO_NOT_SILENTLY_SEARCH MAIN_TARGET sdformat::sdformat)
+idyntree_handle_dependency(nlohmann_json)
 # Workaround for https://github.com/robotology/idyntree/issues/693
 if(TARGET assimp::assimp)
   get_property(assimp_INTERFACE_INCLUDE_DIRECTORIES

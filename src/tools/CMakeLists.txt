@@ -18,6 +18,7 @@ macro(IDYNTREE_ADD_TOOL tool_name tool_code)
 endmacro(IDYNTREE_ADD_TOOL tool_name tool_code)
 
 idyntree_add_tool(idyntree-model-info idyntree-model-info.cpp)
+idyntree_add_tool(idyntree-model-convert idyntree-model-convert.cpp)
 
 if(IDYNTREE_USES_IRRLICHT)
     idyntree_add_tool(idyntree-model-view idyntree-model-view.cpp)

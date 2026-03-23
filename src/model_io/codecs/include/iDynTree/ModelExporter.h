@@ -108,8 +108,9 @@ struct ModelExporterOptions
  *
  * Helper class to export a model to the supported textual formats.
  *
- * Currently the only format supported for export is the URDF format,
- * as it is described in http://wiki.ros.org/urdf/XML .
+ * Supported formats for export are:
+ * - URDF, as described in http://wiki.ros.org/urdf/XML
+ * - iDynTree native JSON (`idyntree-model-json`)
  *
  * Only iDynTree::Model classes that represent multibody system with no loops
  * can be exported.
@@ -127,6 +128,7 @@ struct ModelExporterOptions
  * | Format | Extendend Name | Website |  String for filetype argument  |
  * |:-----------------------------:|:-------:|:-------:|:--------:|
  * | URDF | Unified Robot Description Format  | http://wiki.ros.org/urdf | `urdf` |
+ * | idyntree-model-json | iDynTree native JSON format | N/A | `idyntree-model-json` |
  *
  * ## URDF
  *
@@ -223,7 +225,8 @@ public:
      * Export the model of the robot to a string.
      *
      * @param modelString string containg the model of the robot.
-     * @param filetype type of the file to load, currently supporting only urdf type.
+     * @param filetype type of the model format to export.
+     *                 Supported values: `urdf`, `idyntree-model-json`.
      *
      */
     bool exportModelToString(std::string& modelString, const std::string filetype = "urdf");
@@ -233,8 +236,9 @@ public:
      *
      * @param filename path to the file to export.
      *                 It can be either a relative filename with respect to the current working
-     * directory, or an absolute filename.
-     * @param filetype type of the file to load, currently supporting only urdf type.
+     *                 directory, or an absolute filename.
+     * @param filetype type of the model format to export.
+     *                 Supported values: `urdf`, `idyntree-model-json`.
      *
      */
     bool exportModelToFile(const std::string& filename, const std::string filetype = "urdf");

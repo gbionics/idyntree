@@ -125,16 +125,18 @@ public:
      * Load the model of the robot  from a string.
      *
      * @param modelString string containg the model of the robot.
-     * @param filetype type of the file to load, currently supporting only urdf
-     * type
+     * @param filetype type of the model to load. Supported values are:
+     *                 `urdf`, `sdf`, `idyntree-model-json`.
+     *                 If empty, the format is auto-detected from content when possible.
      * @param packageDirs a vector containing the different directories where to
-     * search for model meshes
+     *                   search for model meshes
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     *       in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and
+     *       `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
-     * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
-     * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
-     * contain `/usr/local/share`.
+     *       `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
+     *       `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
+     *       contain `/usr/local/share`.
      */
     bool loadModelFromString(const std::string& modelString,
                              const std::string& filetype = "",
@@ -144,16 +146,20 @@ public:
      * Load the model of the robot from an external file.
      *
      * @param filename path to the file to load
-     * @param filetype type of the file to load, currently supporting only urdf
-     * type.
+     * @param filetype type of the model to load. Supported values are:
+     *                 `urdf`, `sdf`, `idyntree-model-json`.
+     *                 If empty, the format is auto-detected from file extension
+     *                 (`.urdf` -> `urdf`, `.sdf`/`.world` -> `sdf`, `.json` ->
+     * `idyntree-model-json`).
      * @param packageDirs a vector containing the different directories where to
-     * search for model meshes
+     *                   search for model meshes
      * @note In case no package is specified ModelLoader will look for the meshes
-     * in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and `AMENT_PREFIX_PATH`
+     *       in `GZ_SIM_RESOURCE_PATH`, `GAZEBO_MODEL_PATH`, `ROS_PACKAGE_PATH` and
+     *       `AMENT_PREFIX_PATH`
      * @note If a given model searches for the meshes in
-     * `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
-     * `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
-     * contain `/usr/local/share`.
+     *       `package://StrangeModel/Nested/mesh.stl`, and the actual mesh is in
+     *       `/usr/local/share/StrangeModel/Nested/mesh.stl`, `packageDirs` should
+     *       contain `/usr/local/share`.
      */
     bool loadModelFromFile(const std::string& filename,
                            const std::string& filetype = "",

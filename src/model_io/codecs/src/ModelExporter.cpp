@@ -3,7 +3,12 @@
 
 #include "iDynTree/ModelExporter.h"
 
+#include "ModelIOFormatUtils.h"
 #include "URDFModelExport.h"
+
+#ifdef IDYNTREE_USES_NLOHMANN_JSON
+#include "ModelJSONImportExport.h"
+#endif
 
 #include <string>
 #include <vector>
@@ -94,16 +99,32 @@ bool ModelExporter::init(const Model& model,
 
 bool ModelExporter::exportModelToString(std::string& modelString, const std::string filetype)
 {
-    if (filetype != "urdf")
+    const std::string normalizedFiletype = normalizeModelFormatName(filetype);
+
+    if (normalizedFiletype == "urdf")
     {
-        std::stringstream error_msg;
-        error_msg << "Filetype " << filetype
-                  << " not supported. Only urdf format is currently supported.";
-        reportError("ModelExporter", "exportModelToString", error_msg.str().c_str());
-        return false;
+        return URDFStringFromModel(m_pimpl->m_model, modelString, m_pimpl->m_options);
     }
 
-    return URDFStringFromModel(m_pimpl->m_model, modelString, m_pimpl->m_options);
+    if (normalizedFiletype == "idyntree-model-json")
+    {
+#ifdef IDYNTREE_USES_NLOHMANN_JSON
+        return modelToJSONString(m_pimpl->m_model, modelString);
+#else
+        reportError("ModelExporter",
+                    "exportModelToString",
+                    "idyntree-model-json format requested but iDynTree was not compiled with "
+                    "nlohmann_json support. "
+                    "Please rebuild iDynTree with IDYNTREE_USES_NLOHMANN_JSON option enabled.");
+        return false;
+#endif
+    }
+
+    std::stringstream error_msg;
+    error_msg << "Filetype " << filetype
+              << " not supported. Supported export formats: urdf, idyntree-model-json.";
+    reportError("ModelExporter", "exportModelToString", error_msg.str().c_str());
+    return false;
 }
 
 /**
@@ -115,16 +136,32 @@ bool ModelExporter::exportModelToString(std::string& modelString, const std::str
  */
 bool ModelExporter::exportModelToFile(const std::string& filename, const std::string filetype)
 {
-    if (filetype != "urdf")
+    const std::string normalizedFiletype = normalizeModelFormatName(filetype);
+
+    if (normalizedFiletype == "urdf")
     {
-        std::stringstream error_msg;
-        error_msg << "Filetype " << filetype
-                  << " not supported. Only urdf format is currently supported.";
-        reportError("ModelExporter", "exportModelToFile", error_msg.str().c_str());
-        return false;
+        return URDFFromModel(m_pimpl->m_model, filename, m_pimpl->m_options);
     }
 
-    return URDFFromModel(m_pimpl->m_model, filename, m_pimpl->m_options);
+    if (normalizedFiletype == "idyntree-model-json")
+    {
+#ifdef IDYNTREE_USES_NLOHMANN_JSON
+        return modelToJSONFile(m_pimpl->m_model, filename);
+#else
+        reportError("ModelExporter",
+                    "exportModelToFile",
+                    "idyntree-model-json format requested but iDynTree was not compiled with "
+                    "nlohmann_json support. "
+                    "Please rebuild iDynTree with IDYNTREE_USES_NLOHMANN_JSON option enabled.");
+        return false;
+#endif
+    }
+
+    std::stringstream error_msg;
+    error_msg << "Filetype " << filetype
+              << " not supported. Supported export formats: urdf, idyntree-model-json.";
+    reportError("ModelExporter", "exportModelToFile", error_msg.str().c_str());
+    return false;
 }
 
 } // namespace iDynTree
