@@ -137,6 +137,6 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         if: |
-          github.repository == 'robotology/idyntree' &&
+          github.repository == 'gbionics/idyntree' &&
           ((github.event_name == 'release' && github.event.action == 'published') ||
            (github.event_name == 'push' && github.ref == 'refs/heads/devel'))
