@@ -94,7 +94,7 @@ endif()
 
 target_include_directories(${libraryname} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
-target_link_libraries(${libraryname} PRIVATE Eigen3::Eigen)
+target_link_libraries(${libraryname} PRIVATE Eigen3::Eigen ResolveRoboticsURICpp::ResolveRoboticsURICpp)
 
 # On Windows we need to correctly export global constants that are not inlined with the use of GenerateExportHeader
 # vtk 6.3 installs a GenerateExportHeader CMake module that shadows the official CMake module if find_package(VTK)
