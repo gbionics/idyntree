@@ -17,8 +17,7 @@ std::string resolveURI(const std::string& uri, const std::vector<std::string>& p
 
     // Use ResolveRoboticsURICpp to resolve the URI
     std::string errorMessage;
-    auto resolved
-        = ResolveRoboticsURICpp::resolveRoboticsURI(uri, options, errorMessage);
+    auto resolved = ResolveRoboticsURICpp::resolveRoboticsURI(uri, options, errorMessage);
 
     // Return the resolved path if successful, otherwise return the original URI
     if (resolved.has_value())
