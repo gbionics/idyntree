@@ -80,7 +80,7 @@ else()
   FetchContent_Declare(
     ResolveRoboticsURICpp
     GIT_REPOSITORY https://github.com/gbionics/resolve-robotics-uri-cpp
-    GIT_TAG 1901009b4465be860bb1e6a837a777ed1cfef71c
+    GIT_TAG v0.1.0
   )
   FetchContent_MakeAvailable(ResolveRoboticsURICpp)
 endif()
