@@ -63,6 +63,7 @@ yarp = "*"
 osqp-eigen = "*"
 libsdformat = ">=16.0"
 nlohmann_json = "*"
+libresolve-robotics-uri-cpp = "*"
 clang-format = ">=21.1.5"
 parallel = "*"
 # Find a way to add this only for supported envs

@@ -62,9 +62,29 @@ if(NOT TARGET Eigen3::Eigen)
   find_package(Eigen3 REQUIRED CONFIG)
 endif()
 
+# LibXml2 is required
 if(NOT TARGET LibXml2::LibXml2)
   find_package(LibXml2 REQUIRED)
 endif()
+
+# ResolveRoboticsURICpp >= 0.1.0 is required, but we support also a FetchContent fallback
+if(NOT DEFINED IDYNTREE_USES_SYSTEM_ResolveRoboticsURICpp)
+  find_package(ResolveRoboticsURICpp 0.1.0 QUIET)
+  option(IDYNTREE_USES_SYSTEM_ResolveRoboticsURICpp "If ON, find ResolveRoboticsURICpp via find_package" ${ResolveRoboticsURICpp_FOUND})
+endif()
+
+if(IDYNTREE_USES_SYSTEM_ResolveRoboticsURICpp)
+  find_package(ResolveRoboticsURICpp 0.1.0 REQUIRED)
+else()
+  include(FetchContent)
+  FetchContent_Declare(
+    ResolveRoboticsURICpp
+    GIT_REPOSITORY https://github.com/gbionics/resolve-robotics-uri-cpp
+    GIT_TAG v0.1.0
+  )
+  FetchContent_MakeAvailable(ResolveRoboticsURICpp)
+endif()
+
 
 idyntree_handle_dependency(YARP COMPONENTS os dev math MAIN_TARGET YARP::YARP_os)
 set(YARP_REQUIRED_VERSION 3.3)
