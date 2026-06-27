@@ -102,6 +102,8 @@ get_target_property(RRUC_INCLUDE_DIRS ResolveRoboticsURICpp::ResolveRoboticsURIC
 if(RRUC_INCLUDE_DIRS)
     target_include_directories(${libraryname} PRIVATE ${RRUC_INCLUDE_DIRS})
 endif()
+# rruc uses std::filesystem, so we need C++17 support
+target_compile_features(${libraryname} PRIVATE cxx_std_17)
 
 # On Windows we need to correctly export global constants that are not inlined with the use of GenerateExportHeader
 # vtk 6.3 installs a GenerateExportHeader CMake module that shadows the official CMake module if find_package(VTK)
