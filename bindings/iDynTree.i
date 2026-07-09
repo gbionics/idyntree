@@ -250,6 +250,20 @@ namespace std {
 
 // Transformations: Rotation and Transform
 %include "iDynTree/Rotation.h"
+
+// getRotation()/getPosition() return a reference into this Transform, not a copy.
+// Chained on a temporary (e.g. getWorldTransform(f).getPosition().toNumPy()), the
+// Transform gets GC'd before the child is used, leaving it pointing at freed memory
+// (https://github.com/gbionics/idyntree/issues/1263).
+// In this way we keep the parent alive by attaching it to the child below.
+#ifdef SWIGPYTHON
+%feature("pythonappend") iDynTree::Transform::getRotation() const %{
+    val.__idyntree_owner_keepalive = self
+%}
+%feature("pythonappend") iDynTree::Transform::getPosition() const %{
+    val.__idyntree_owner_keepalive = self
+%}
+#endif
 %include "iDynTree/Transform.h"
 %include "iDynTree/TransformDerivative.h"
 %include "iDynTree/Span.h"
