@@ -1,0 +1,9 @@
+{
+  "name": "iDynTree",
+  "type": "cmake",
+  "dependencies": [
+    "Eigen3",
+    "LibXml2",
+    "ResolveRoboticsURICpp"
+  ]
+}
