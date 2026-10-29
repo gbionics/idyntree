@@ -444,7 +444,14 @@ bool addVisualPropertiesToModel(
                         reportError("URDFDocument", "addVisualPropertiesToModel", message.c_str());
                         return false;
                     }
-                    material.setColor(*found->second.m_rgba);
+                    // A material can have no rgba color, for example if it
+                    // only specifies a texture (not supported by iDynTree):
+                    // keep the default color instead of dereferencing a
+                    // null rgba. See https://github.com/gbionics/idyntree/issues/1301
+                    if (found->second.m_rgba)
+                    {
+                        material.setColor(*found->second.m_rgba);
+                    }
                 }
                 shape->setMaterial(material);
             }

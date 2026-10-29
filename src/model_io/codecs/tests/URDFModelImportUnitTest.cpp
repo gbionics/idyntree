@@ -527,8 +527,34 @@ void checkEffortAndVelocityLimitsRoundtrip()
     std::cerr << "URDF effort and velocity limits roundtrip test passed" << std::endl;
 }
 
+
+void checkTextureOnlyMaterialImport()
+{
+    // Regression test for https://github.com/gbionics/idyntree/issues/1301 :
+    // a visual referencing a global material that has a texture but no color
+    // used to segfault instead of being loaded with the default color.
+    std::string urdf = R"(<?xml version="1.0"?>
+<robot name="texture_only_material">
+  <material name="TexMat">
+    <texture filename="package://foo/bar.png"/>
+  </material>
+  <link name="base_link">
+    <visual>
+      <geometry><box size="1 1 1"/></geometry>
+      <material name="TexMat"/>
+    </visual>
+  </link>
+</robot>)";
+
+    ModelLoader loader;
+    bool result = loader.loadModelFromString(urdf);
+    ASSERT_IS_TRUE(result && loader.isValid());
+    ASSERT_IS_TRUE(getNrOfVisuals(loader.model()) == 1);
+}
+
 int main()
 {
+    checkTextureOnlyMaterialImport();
     checkURDF(getAbsModelPath("/simple_model.urdf"), 1, 0, 0, 1, 1, 0, "link1");
     checkURDF(getAbsModelPath("/oneLink.urdf"), 1, 0, 0, 7, 1, 1, "link1");
     checkURDF(getAbsModelPath("twoLinks.urdf"), 2, 1, 1, 6, 0, 0, "link1");
