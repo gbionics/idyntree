@@ -21,22 +21,20 @@
 #include <stack>
 #include <vector>
 
-static const std::string stringFromFormattedCString(const char* message, va_list arguments)
+static std::string stringFromFormattedCString(const char* message, va_list arguments)
 {
     va_list tempArguments;
     va_copy(tempArguments, arguments);
-    // We have to get the size of the final string.
-    // We use vsnprintf with an empty buffer
-    // (the function returns the number of characters that didn't fit the buffer)
-    va_copy(tempArguments, arguments);
-    int length = std::vsnprintf(NULL, 0, message, tempArguments);
+    const int length = std::vsnprintf(nullptr, 0, message, tempArguments);
     va_end(tempArguments);
+    if (length <= 0)
+    {
+        return {};
+    }
 
-    // We now have the size. We can create the real string.
-    std::vector<char> buffer(length + 1);
-    std::vsnprintf(buffer.data(), buffer.size(), message, arguments);
-
-    return std::string(buffer.begin(), buffer.end());
+    std::string buffer(static_cast<std::size_t>(length), '\0');
+    std::vsnprintf(&buffer[0], buffer.size() + 1, message, arguments);
+    return buffer;
 }
 
 namespace iDynTree
@@ -179,6 +177,8 @@ void XMLParser::XMLParserPimpl::parserCallbackEndDocument(void* context)
 
     if (!state->m_pimpl->m_document->documentHasBeenParsed())
     {
+        state->m_pimpl->m_document.reset();
+        state->m_pimpl->m_parserState.setParsingError();
         reportError("XMLParser",
                     "parserCallbackEndDocument",
                     "Document final callback failed processing");
@@ -188,6 +188,7 @@ void XMLParser::XMLParserPimpl::parserCallbackEndDocument(void* context)
     {
         // This is an error. Reset the document as it is invalid
         state->m_pimpl->m_document.reset();
+        state->m_pimpl->m_parserState.setParsingError();
         reportError("XMLParser", "parserCallbackEndDocument", "Unbalanced tags in the document");
     }
 }
@@ -250,7 +251,7 @@ void XMLParser::XMLParserPimpl::parserCallbackStartTag(void* context,
     // additionally configure element
     if (!nextElement->setAttributes(parsedAttributes))
     {
-        // Error
+        state->m_pimpl->m_parserState.setParsingError();
     }
     state->m_pimpl->m_parsedTrace.push(nextElement);
 }

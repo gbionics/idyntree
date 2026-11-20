@@ -261,6 +261,11 @@ void checkDuplicateJointsReturnsError()
 
     ModelLoader loader;
     ASSERT_IS_FALSE(loader.loadModelFromString(urdf));
+    ASSERT_IS_FALSE(loader.loadModelFromString("<robot name='r'><link name='a'/><link "
+                                               "name='b'/></robot>"));
+    ASSERT_IS_FALSE(loader.loadModelFromString("<robot name='r'><link name='a'/><link name='b'/>"
+                                               "<joint name='j' type='planar'><parent "
+                                               "link='a'/><child link='b'/></joint></robot>"));
 }
 
 void checkaddSensorFramesAsAdditionalFramesOption()
@@ -542,6 +547,7 @@ int main()
     checkLimitsForJointsAreDefinedFromFileName(getAbsModelPath("iCubGenova02.urdf"));
 
     checkLoadReducedModelOrderIsKept(getAbsModelPath("iCubGenova02.urdf"));
+    checkDuplicateJointsReturnsError();
     checkaddSensorFramesAsAdditionalFramesOption();
     checkSphericalJointImport();
 
