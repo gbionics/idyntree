@@ -37,6 +37,7 @@ public:
         std::string parentLinkName;
         std::string childLinkName;
         bool hasJointCenter{false};
+        bool isFloating{false};
         iDynTree::Position jointCenterInParentFrame{iDynTree::Position::Zero()};
     };
 
