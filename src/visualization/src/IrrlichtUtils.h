@@ -23,7 +23,12 @@
 
 #include "FloorGridSceneNode.h"
 
+#include <array>
 #include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <fstream>
+#include <vector>
 
 namespace iDynTree
 {
@@ -156,6 +161,62 @@ inline std::string getFileExt(const std::string& filename)
     }
 }
 
+inline irr::scene::IAnimatedMesh* loadExternalMeshWithIrrlicht(irr::scene::ISceneManager* smgr,
+                                                               const std::string& meshPath,
+                                                               const std::string& ext)
+{
+    if (ext == "stl")
+    {
+        if (auto* cached = smgr->getMeshCache()->getMeshByName(meshPath.c_str()))
+        {
+            return cached;
+        }
+        std::ifstream file(meshPath, std::ios::binary | std::ios::ate);
+        if (file)
+        {
+            const auto endPos = file.tellg();
+            if (endPos >= 84)
+            {
+                const auto fileSize = static_cast<std::uint64_t>(endPos);
+                std::array<std::uint8_t, 84> header{};
+                file.seekg(0);
+                if (file.read(reinterpret_cast<char*>(header.data()), header.size()))
+                {
+                    const bool startsWithSolid
+                        = ((header[0] | 0x20u) == 's') && ((header[1] | 0x20u) == 'o')
+                          && ((header[2] | 0x20u) == 'l') && ((header[3] | 0x20u) == 'i')
+                          && ((header[4] | 0x20u) == 'd');
+                    const std::uint32_t triCount
+                        = static_cast<std::uint32_t>(header[80])
+                          | (static_cast<std::uint32_t>(header[81]) << 8u)
+                          | (static_cast<std::uint32_t>(header[82]) << 16u)
+                          | (static_cast<std::uint32_t>(header[83]) << 24u);
+                    if (startsWithSolid && (84ull + 50ull * triCount == fileSize))
+                    {
+                        std::vector<char> buffer(static_cast<std::size_t>(fileSize));
+                        std::memcpy(buffer.data(), header.data(), header.size());
+                        buffer[0] = '_';
+                        if (file.read(buffer.data() + header.size(),
+                                      static_cast<std::streamsize>(fileSize - header.size())))
+                        {
+                            irr::io::IReadFile* memFile
+                                = smgr->getFileSystem()->createMemoryReadFile(buffer.data(),
+                                                                              static_cast<irr::s32>(
+                                                                                  buffer.size()),
+                                                                              meshPath.c_str(),
+                                                                              false);
+                            irr::scene::IAnimatedMesh* mesh = smgr->getMesh(memFile);
+                            memFile->drop();
+                            return mesh;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return smgr->getMesh(meshPath.c_str());
+}
+
 inline irr::scene::ISceneNode* addGeometryToSceneManager(const iDynTree::SolidShape* geom,
                                                          irr::scene::ISceneNode* linkNode,
                                                          irr::scene::ISceneManager* smgr)
@@ -215,20 +276,20 @@ inline irr::scene::ISceneNode* addGeometryToSceneManager(const iDynTree::SolidSh
     if (geom->isExternalMesh())
     {
         const iDynTree::ExternalMesh* externalMesh = geom->asExternalMesh();
+        const std::string ext = getFileExt(externalMesh->getFilename());
+        const std::string resolvedPath = externalMesh->getFileLocationOnLocalFileSystem();
 
         irr::scene::IAnimatedMesh* loadedAnimatedMesh
-            = smgr->getMesh(externalMesh->getFileLocationOnLocalFileSystem().c_str());
+            = loadExternalMeshWithIrrlicht(smgr, resolvedPath, ext);
 
         if (!loadedAnimatedMesh)
         {
-            std::cerr << "Error in loading mesh "
-                      << externalMesh->getFileLocationOnLocalFileSystem() << std::endl;
+            std::cerr << "Error in loading mesh " << resolvedPath << std::endl;
             return 0;
         }
 
         // If multiple mesh are loaded, add them
-        if (getFileExt(externalMesh->getFilename()) == "dae"
-            || getFileExt(externalMesh->getFilename()) == "obj")
+        if (ext == "dae" || ext == "obj")
         {
             use_iDynTree_material = false;
         }
@@ -236,8 +297,7 @@ inline irr::scene::ISceneNode* addGeometryToSceneManager(const iDynTree::SolidSh
         iDynTree::Vector3 scale = externalMesh->getScale();
 
         // Hack: if stl mesh, flip x
-        if (getFileExt(externalMesh->getFilename()) == "stl"
-            || getFileExt(externalMesh->getFilename()) == "obj")
+        if (ext == "stl" || ext == "obj")
         {
             scale(0) = -scale(0); // STL and OBJ meshes are interpreted as left handed by irrlicht
         }
