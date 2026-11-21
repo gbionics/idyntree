@@ -30,6 +30,7 @@ static bool addVisualPropertiesToModel(
     const Model& model,
     const std::unordered_map<std::string, std::vector<VisualElement::VisualInfo>>& visuals,
     const std::unordered_map<std::string, MaterialElement::MaterialInfo>& materialDatabase,
+    const std::string& originalFilename,
     ModelSolidShapes& modelGeometries);
 
 URDFDocument::URDFDocument(XMLParserState& parserState, const iDynTree::ModelParserOptions& options)
@@ -169,6 +170,7 @@ bool URDFDocument::documentHasBeenParsed()
     if (!addVisualPropertiesToModel(m_model,
                                     m_buffers.visuals,
                                     m_buffers.materials,
+                                    m_options.originalFilename,
                                     m_model.visualSolidShapes()))
     {
         reportError("URDFDocument",
@@ -178,6 +180,7 @@ bool URDFDocument::documentHasBeenParsed()
     if (!addVisualPropertiesToModel(m_model,
                                     m_buffers.collisions,
                                     m_buffers.materials,
+                                    m_options.originalFilename,
                                     m_model.collisionSolidShapes()))
     {
         reportError("URDFDocument",
@@ -388,8 +391,20 @@ bool addVisualPropertiesToModel(
     const Model& model,
     const std::unordered_map<std::string, std::vector<VisualElement::VisualInfo>>& visuals,
     const std::unordered_map<std::string, MaterialElement::MaterialInfo>& materialDatabase,
+    const std::string& originalFilename,
     ModelSolidShapes& modelGeometries)
 {
+    std::string modelDirPrefix;
+    std::size_t sep = originalFilename.find_last_of("/\\");
+    if (sep != std::string::npos)
+    {
+        while (sep > 0 && (originalFilename[sep - 1] == '/' || originalFilename[sep - 1] == '\\'))
+        {
+            --sep;
+        }
+        modelDirPrefix = originalFilename.substr(0, sep + 1);
+    }
+
     for (const auto& linkVisual : visuals)
     {
         // A urdf link can be either a iDynTree link or an iDynTree frame, solve
@@ -458,6 +473,20 @@ bool addVisualPropertiesToModel(
             LinkIndex idyntreeLinkIndex = model.getLinkIndex(linkName);
             // ModelSolidShapes contains plain pointers, but they own the memory.
             SolidShape* solidShape = shape->clone();
+            if (solidShape->isExternalMesh() && !modelDirPrefix.empty())
+            {
+                ExternalMesh* mesh = solidShape->asExternalMesh();
+                const std::string& meshFile = mesh->getFilename();
+                const bool hasScheme = meshFile.find(":/") != std::string::npos
+                                       || meshFile.rfind("file:", 0) == 0;
+                const bool isAbs = !meshFile.empty()
+                                   && (meshFile[0] == '/' || meshFile[0] == '\\'
+                                       || (meshFile.size() > 1 && meshFile[1] == ':'));
+                if (!meshFile.empty() && !hasScheme && !isAbs)
+                {
+                    mesh->setFilename(modelDirPrefix + meshFile);
+                }
+            }
             modelGeometries.getLinkSolidShapes()[idyntreeLinkIndex].push_back(solidShape);
         }
     }
