@@ -49,8 +49,9 @@ bool JointElement::setAttributes(
             m_jointType = "spherical";
         }
         // Explicitly check the supported types
-        if (m_jointType != "fixed" && m_jointType != "revolute" && m_jointType != "continuous"
-            && m_jointType != "prismatic" && m_jointType != "spherical")
+        if (m_jointType != "fixed" && m_jointType != "floating" && m_jointType != "revolute"
+            && m_jointType != "continuous" && m_jointType != "prismatic"
+            && m_jointType != "spherical")
         {
             std::string errStr = "Joint " + m_jointName + " has type " + m_jointType
                                  + " that is not currently supported by iDynTree.";
@@ -198,9 +199,10 @@ void JointElement::exitElementScope()
     info.joint = nullptr;
     std::unordered_map<std::string, JointElement::JointInfo>* map = nullptr;
 
-    if (m_jointType == "fixed")
+    if (m_jointType == "fixed" || m_jointType == "floating")
     {
         info.joint = std::make_shared<FixedJoint>(m_jointFrame);
+        info.isFloating = (m_jointType == "floating");
         map = &m_fixedJoints;
     } else if (m_jointType == "revolute" || m_jointType == "continuous")
     {

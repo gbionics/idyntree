@@ -564,20 +564,36 @@ bool Visualizer::init(const VisualizerOptions& visualizerOptions)
 // For this reason, we save the value before the irr::createDeviceEx call,
 // and we restore it (or we unset it) after call
 // Workaround for https://github.com/robotology/idyntree/issues/986
-#if defined(_WIN32) && defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
-    const char* SDL_VIDEODRIVER_value = NULL;
+#if defined(IDYNTREE_USE_GLFW_WINDOW)
+    std::string SDL_VIDEODRIVER_value;
+    bool has_SDL_VIDEODRIVER = false;
     if (irrDevParams.DeviceType == irr::EIDT_SDL)
     {
-        SDL_VIDEODRIVER_value = std::getenv("SDL_VIDEODRIVER");
+        if (const char* envVal = std::getenv("SDL_VIDEODRIVER"))
+        {
+            has_SDL_VIDEODRIVER = true;
+            SDL_VIDEODRIVER_value = envVal;
+        }
     }
 #endif
 
     pimpl->m_irrDevice = irr::createDeviceEx(irrDevParams);
 
-#if defined(_WIN32) && defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
+#if defined(IDYNTREE_USE_GLFW_WINDOW)
     if (irrDevParams.DeviceType == irr::EIDT_SDL)
     {
-        SetEnvironmentVariableA("SDL_VIDEODRIVER", SDL_VIDEODRIVER_value);
+#if defined(_WIN32)
+        SetEnvironmentVariableA("SDL_VIDEODRIVER",
+                                has_SDL_VIDEODRIVER ? SDL_VIDEODRIVER_value.c_str() : nullptr);
+#else
+        if (has_SDL_VIDEODRIVER)
+        {
+            setenv("SDL_VIDEODRIVER", SDL_VIDEODRIVER_value.c_str(), 1);
+        } else
+        {
+            unsetenv("SDL_VIDEODRIVER");
+        }
+#endif
     }
 #endif
 

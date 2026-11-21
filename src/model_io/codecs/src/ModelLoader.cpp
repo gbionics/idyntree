@@ -172,6 +172,8 @@ bool ModelLoader::loadModelFromFile(const std::string& filename,
     parser->setPackageDirs(packageDirs);
     if (!parser->parseXMLFile(filename))
     {
+        m_pimpl->m_model = Model();
+        m_pimpl->m_isModelValid = false;
         reportError("ModelLoader", "loadModelFromFile", "Error in parsing model from URDF.");
         return false;
     }
@@ -281,6 +283,8 @@ bool ModelLoader::loadModelFromString(const std::string& modelString,
     parser->setPackageDirs(packageDirs);
     if (!parser->parseXMLString(modelString))
     {
+        m_pimpl->m_model = Model();
+        m_pimpl->m_isModelValid = false;
         reportError("ModelLoader", "loadModelFromString", "Error in parsing model from URDF.");
         return false;
     }
