@@ -8,6 +8,9 @@
 
 #include "testModels.h"
 
+#include <cstdio>
+#include <fstream>
+
 void checkVizLoading(const iDynTree::Model& model)
 {
     // Open visualizer
@@ -334,6 +337,17 @@ void checkShapes()
     ASSERT_IS_TRUE(ok);
     ok = shapes.setVisible(index, true);
     ASSERT_IS_TRUE(ok);
+
+    const std::string stlPath = getAbsModelPath("solid_hdr.stl");
+    {
+        char buf[134] = "solid SW_TEST";
+        buf[80] = 1;
+        std::ofstream(stlPath, std::ios::binary).write(buf, sizeof(buf));
+    }
+    iDynTree::ExternalMesh mesh;
+    mesh.setFilename(stlPath);
+    shapes.addShape(mesh);
+    std::remove(stlPath.c_str());
 
     // Check if run is returning true
     // Regression test for https://github.com/robotology/idyntree/issues/986

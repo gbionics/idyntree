@@ -261,6 +261,11 @@ void checkDuplicateJointsReturnsError()
 
     ModelLoader loader;
     ASSERT_IS_FALSE(loader.loadModelFromString(urdf));
+    ASSERT_IS_FALSE(loader.loadModelFromString("<robot name='r'><link name='a'/><link "
+                                               "name='b'/></robot>"));
+    ASSERT_IS_FALSE(loader.loadModelFromString("<robot name='r'><link name='a'/><link name='b'/>"
+                                               "<joint name='j' type='planar'><parent "
+                                               "link='a'/><child link='b'/></joint></robot>"));
 }
 
 void checkaddSensorFramesAsAdditionalFramesOption()
@@ -538,10 +543,28 @@ int main()
 
     checkModelLoderForURDFFile(getAbsModelPath("/oneLink.urdf"));
     checkModelLoaderFromURDFString("this is not an xml", false);
+    checkModelLoaderFromURDFString("<robot name='r'><link name='world'/><link "
+                                   "name='b'><inertial><mass value='1'/></inertial></link>"
+                                   "<joint name='j' type='floating'><parent link='world'/><child "
+                                   "link='b'/></joint></robot>",
+                                   true);
+    checkModelLoaderFromURDFString("<robot name='r'><link name='a'><inertial><mass "
+                                   "value='1'/></inertial></link>"
+                                   "<link name='b'><inertial><mass value='1'/></inertial></link>"
+                                   "<joint name='j' type='floating'><parent link='a'/><child "
+                                   "link='b'/></joint></robot>",
+                                   false);
+    checkModelLoaderFromURDFString("<robot name='r'><material name='m'><texture "
+                                   "filename='t.png'/></material>"
+                                   "<link name='l'><inertial><mass value='1'/></inertial>"
+                                   "<visual><geometry><box size='1 1 1'/></geometry><material "
+                                   "name='m'/></visual></link></robot>",
+                                   true);
 
     checkLimitsForJointsAreDefinedFromFileName(getAbsModelPath("iCubGenova02.urdf"));
 
     checkLoadReducedModelOrderIsKept(getAbsModelPath("iCubGenova02.urdf"));
+    checkDuplicateJointsReturnsError();
     checkaddSensorFramesAsAdditionalFramesOption();
     checkSphericalJointImport();
 

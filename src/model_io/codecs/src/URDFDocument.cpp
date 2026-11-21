@@ -126,7 +126,29 @@ bool URDFDocument::documentHasBeenParsed()
     }
 
     // set the default root in the model
-    m_model.setDefaultBaseLink(m_model.getLinkIndex(rootCandidates[0]));
+    const LinkIndex rootIndex = m_model.getLinkIndex(rootCandidates[0]);
+    m_model.setDefaultBaseLink(rootIndex);
+
+    for (const auto& entry : m_buffers.fixedJoints)
+    {
+        const auto& jointInfo = entry.second;
+        if (!jointInfo.isFloating)
+        {
+            continue;
+        }
+        if (jointInfo.parentLinkName != rootCandidates[0]
+            || m_model.getLink(rootIndex)->getInertia().getMass() > 0.0
+            || m_model.getNrOfNeighbors(rootIndex) != 1)
+        {
+            std::string errStr = "Joint " + entry.first
+                                 + " has type floating, which is only supported when connecting "
+                                   "a massless root frame link to the base link.";
+            reportError("URDFDocument", "documentHasBeenParsed", errStr.c_str());
+            m_model = Model();
+            return false;
+        }
+    }
+
     iDynTree::Model newModel, normalizedModel;
     newModel.setPackageDirs(m_model.getPackageDirs());
     normalizedModel.setPackageDirs(m_model.getPackageDirs());
@@ -432,6 +454,7 @@ bool addVisualPropertiesToModel(
                 if (visual.m_material->m_rgba)
                 {
                     material.setColor(*visual.m_material->m_rgba);
+                    shape->setMaterial(material);
                 } else
                 {
                     // Look in the DB for the material with the specified name
@@ -444,9 +467,12 @@ bool addVisualPropertiesToModel(
                         reportError("URDFDocument", "addVisualPropertiesToModel", message.c_str());
                         return false;
                     }
-                    material.setColor(*found->second.m_rgba);
+                    if (found->second.m_rgba)
+                    {
+                        material.setColor(*found->second.m_rgba);
+                        shape->setMaterial(material);
+                    }
                 }
-                shape->setMaterial(material);
             }
 
             if (visual.m_nameAttributeFound)
