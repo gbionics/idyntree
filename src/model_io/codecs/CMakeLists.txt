@@ -78,6 +78,7 @@ endif()
 # Can be removed with CMake 3.12
 target_include_directories(${libraryname} PRIVATE $<TARGET_PROPERTY:idyntree-private-fpconv,INTERFACE_INCLUDE_DIRECTORIES>)
 
+target_compile_features(${libraryname} PRIVATE cxx_std_17)
 target_compile_options(${libraryname} PRIVATE ${IDYNTREE_WARNING_FLAGS})
 
 set_property(TARGET ${libraryname} PROPERTY PUBLIC_HEADER ${IDYNTREE_MODELIO_HEADERS})

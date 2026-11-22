@@ -13,6 +13,7 @@
 #include <iDynTree/Traversal.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <unordered_set>
 #include <vector>
 
@@ -394,16 +395,7 @@ bool addVisualPropertiesToModel(
     const std::string& originalFilename,
     ModelSolidShapes& modelGeometries)
 {
-    std::string modelDirPrefix;
-    std::size_t sep = originalFilename.find_last_of("/\\");
-    if (sep != std::string::npos)
-    {
-        while (sep > 0 && (originalFilename[sep - 1] == '/' || originalFilename[sep - 1] == '\\'))
-        {
-            --sep;
-        }
-        modelDirPrefix = originalFilename.substr(0, sep + 1);
-    }
+    const std::filesystem::path modelDir = std::filesystem::path(originalFilename).parent_path();
 
     for (const auto& linkVisual : visuals)
     {
@@ -473,18 +465,16 @@ bool addVisualPropertiesToModel(
             LinkIndex idyntreeLinkIndex = model.getLinkIndex(linkName);
             // ModelSolidShapes contains plain pointers, but they own the memory.
             SolidShape* solidShape = shape->clone();
-            if (solidShape->isExternalMesh() && !modelDirPrefix.empty())
+            if (solidShape->isExternalMesh() && !modelDir.empty())
             {
                 ExternalMesh* mesh = solidShape->asExternalMesh();
                 const std::string& meshFile = mesh->getFilename();
                 const bool hasScheme = meshFile.find(":/") != std::string::npos
                                        || meshFile.rfind("file:", 0) == 0;
-                const bool isAbs = !meshFile.empty()
-                                   && (meshFile[0] == '/' || meshFile[0] == '\\'
-                                       || (meshFile.size() > 1 && meshFile[1] == ':'));
-                if (!meshFile.empty() && !hasScheme && !isAbs)
+                const std::filesystem::path meshPath(meshFile);
+                if (!meshPath.empty() && !hasScheme && meshPath.is_relative())
                 {
-                    mesh->setFilename(modelDirPrefix + meshFile);
+                    mesh->setFilename((modelDir / meshPath).lexically_normal().string());
                 }
             }
             modelGeometries.getLinkSolidShapes()[idyntreeLinkIndex].push_back(solidShape);
