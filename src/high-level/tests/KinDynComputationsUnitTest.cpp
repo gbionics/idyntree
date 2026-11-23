@@ -1175,6 +1175,12 @@ void testFloatingBaseFrameConsistency(std::string modelFilePath,
     iDynTree::Vector6 rootLinkAcceleration_with_l_foot_base
         = dynComp.getFrameAcc(rootLinkName, base_acc_l_foot, ddq_joint);
     iDynTree::Vector6 rootLink_bias_acc_with_l_foot_base = dynComp.getFrameBiasAcc(rootLinkName);
+    Vector6 zeroBaseAcc;
+    zeroBaseAcc.zero();
+    VectorDynSize zeroJointAcc(dynComp.getNrOfDegreesOfFreedom());
+    zeroJointAcc.zero();
+    Vector6 l_sole_bias_acc_with_l_foot_base
+        = dynComp.getFrameAcc(baseFrameName, zeroBaseAcc, zeroJointAcc);
     MatrixDynSize MassMatrix_with_l_foot_base(6 + dynComp.getNrOfDegreesOfFreedom(),
                                               6 + dynComp.getNrOfDegreesOfFreedom());
     dynComp.getFreeFloatingMassMatrix(MassMatrix_with_l_foot_base);
@@ -1236,13 +1242,22 @@ void testFloatingBaseFrameConsistency(std::string modelFilePath,
                         l_foot_velocity_with_l_sole_base.asVector());
     ASSERT_EQUAL_VECTOR(dynComp.getBaseTwist().asVector(),
                         l_sole_velocity_with_l_sole_base.asVector());
-    ASSERT_EQUAL_VECTOR(rootLink_bias_acc_with_l_foot_base, rootLink_bias_acc_with_l_sole_base);
+    // Zero mixed acceleration at the foot gives a centripetal acceleration at the sole.
+    // Account for that change of generalized acceleration when comparing bias quantities.
+    ASSERT_EQUAL_VECTOR(toEigen(rootLink_bias_acc_with_l_foot_base),
+                        toEigen(rootLink_bias_acc_with_l_sole_base)
+                            + toEigen(Jacobian_rootLink_with_l_sole_base).leftCols(6)
+                                  * toEigen(l_sole_bias_acc_with_l_foot_base));
     ASSERT_EQUAL_VECTOR(rootLinkAcceleration_with_l_foot_base,
                         rootLinkAcceleration_with_l_sole_base);
     ASSERT_EQUAL_VECTOR(baseForceAndJointTorques_with_l_foot_base.jointTorques(),
                         baseForceAndJointTorques_with_l_sole_base.jointTorques());
-    ASSERT_EQUAL_VECTOR(biasForces_with_l_foot_base.jointTorques(),
-                        biasForces_with_l_sole_base.jointTorques());
+    VectorDynSize biasCorrection(6 + dynComp.getNrOfDegreesOfFreedom());
+    toEigen(biasCorrection) = toEigen(MassMatrix_with_l_sole_base).leftCols(6)
+                              * toEigen(l_sole_bias_acc_with_l_foot_base);
+    ASSERT_EQUAL_VECTOR(toEigen(biasForces_with_l_foot_base.jointTorques()),
+                        toEigen(biasForces_with_l_sole_base.jointTorques())
+                            + toEigen(biasCorrection).tail(dynComp.getNrOfDegreesOfFreedom()));
     ASSERT_EQUAL_VECTOR(gravityForces_with_l_foot_base.jointTorques(),
                         gravityForces_with_l_sole_base.jointTorques());
     iDynTree::Transform toFrame_H_fromFrame;
@@ -1262,8 +1277,11 @@ void testFloatingBaseFrameConsistency(std::string modelFilePath,
     ASSERT_EQUAL_VECTOR(baseForceAndJointTorques_with_l_foot_base.baseWrench(),
                         toFrame_H_fromFrame
                             * baseForceAndJointTorques_with_l_sole_base.baseWrench());
+    Wrench correctedBiasWrench = biasForces_with_l_sole_base.baseWrench();
+    fromEigen(correctedBiasWrench,
+              toEigen(biasForces_with_l_sole_base.baseWrench()) + toEigen(biasCorrection).head(6));
     ASSERT_EQUAL_VECTOR(biasForces_with_l_foot_base.baseWrench(),
-                        toFrame_H_fromFrame * biasForces_with_l_sole_base.baseWrench());
+                        toFrame_H_fromFrame * correctedBiasWrench);
     ASSERT_EQUAL_VECTOR(gravityForces_with_l_foot_base.baseWrench(),
                         toFrame_H_fromFrame * gravityForces_with_l_sole_base.baseWrench());
 
@@ -1428,6 +1446,256 @@ void testCoriolisAndMassMatricesOnRandomModels()
     }
 }
 
+void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
+                                                    const FrameVelocityRepresentation frameVelRepr,
+                                                    const std::string& baseFrameName = "l_sole")
+{
+    // It tests getCoriolisAndMassMatrices on a floating base model with
+    // different frames used as floating base.
+
+    iDynTree::KinDynComputations dynComp;
+    iDynTree::ModelLoader mdlLoader;
+    bool ok = mdlLoader.loadModelFromFile(modelFilePath);
+    ASSERT_IS_TRUE(ok);
+    Model model = mdlLoader.model();
+    ASSERT_IS_TRUE(model.addAdditionalFrameToLink("l_foot",
+                                                  "offset_base",
+                                                  Transform(Rotation::RPY(0.4, -0.6, 0.8),
+                                                            Position(0.2, -0.3, 0.4))));
+    ASSERT_IS_TRUE(dynComp.loadRobotModel(model));
+
+    ok = dynComp.setFrameVelocityRepresentation(frameVelRepr);
+    ASSERT_IS_TRUE(ok);
+
+    const int nrOfDofs = dynComp.getNrOfDegreesOfFreedom();
+
+    // Test with iCub model using l_foot as base link vs l_sole as base frame
+    std::string baseLinkName = "l_foot";
+
+    // Check if both frames exist in the model
+    int baseLinkIndex = dynComp.model().getFrameIndex(baseLinkName);
+    int baseFrameIndex = dynComp.model().getFrameIndex(baseFrameName);
+
+    if (baseLinkIndex < 0 || baseFrameIndex < 0)
+    {
+        // if frames are not present, test should fail
+        ASSERT_IS_TRUE(false);
+    }
+
+    // Set floating base to l_foot and create a state with non-zero velocities
+    ok = dynComp.setFloatingBase(baseLinkName);
+    ASSERT_IS_TRUE(ok);
+
+    // Create a non-trivial state with non-zero velocities for both base and joints
+    Transform world_H_l_foot = getRandomTransform();
+    VectorDynSize q_joint(dynComp.model().getNrOfPosCoords());
+    getRandomJointPositions(q_joint, dynComp.model());
+
+    // Generate non-zero base velocity
+    Twist base_vel_l_foot = getRandomTwist();
+
+    // Set random joint velocities
+    VectorDynSize qdot_joint(dynComp.model().getNrOfDOFs());
+    getRandomVector(qdot_joint);
+
+    // Gravity
+    Vector3 gravity;
+    gravity(0) = 0.0;
+    gravity(1) = 0.0;
+    gravity(2) = -9.81;
+
+    // Set state with l_foot as floating base
+    ok = dynComp.setRobotState(world_H_l_foot, q_joint, base_vel_l_foot, qdot_joint, gravity);
+    ASSERT_IS_TRUE(ok);
+
+    VectorDynSize nu_l_foot(6 + nrOfDofs);
+    ok = dynComp.getModelVel(nu_l_foot);
+    ASSERT_IS_TRUE(ok);
+
+    // Get coriolis matrix, mass matrix, and mass matrix derivative with l_foot as base
+    MatrixDynSize coriolisMatrix_l_foot(6 + nrOfDofs, 6 + nrOfDofs);
+    MatrixDynSize massMatrix_l_foot(6 + nrOfDofs, 6 + nrOfDofs);
+    MatrixDynSize massMatrixDerivative_l_foot(6 + nrOfDofs, 6 + nrOfDofs);
+    ok = dynComp.getCoriolisAndMassMatrices(coriolisMatrix_l_foot,
+                                            massMatrix_l_foot,
+                                            massMatrixDerivative_l_foot);
+    ASSERT_IS_TRUE(ok);
+
+    // Check mass Mdot = C + C^T
+    ASSERT_EQUAL_MATRIX_TOL(toEigen(massMatrixDerivative_l_foot),
+                            toEigen(coriolisMatrix_l_foot)
+                                + toEigen(coriolisMatrix_l_foot).transpose(),
+                            1e-8);
+
+    // Check mass matrices consistency
+    MatrixDynSize massMatrix_l_foot_reference(6 + nrOfDofs, 6 + nrOfDofs);
+    ok = dynComp.getFreeFloatingMassMatrix(massMatrix_l_foot_reference);
+    ASSERT_IS_TRUE(ok);
+    ASSERT_EQUAL_MATRIX_TOL(toEigen(massMatrix_l_foot), toEigen(massMatrix_l_foot_reference), 1e-8);
+
+    // Check C_nu = bias_forces - gravity_forces
+    FreeFloatingGeneralizedTorques biasForces_l_foot(dynComp.model());
+    ok = dynComp.generalizedBiasForces(biasForces_l_foot);
+    ASSERT_IS_TRUE(ok);
+    FreeFloatingGeneralizedTorques gravityForces_l_foot(dynComp.model());
+    ok = ok && dynComp.generalizedGravityForces(gravityForces_l_foot);
+    ASSERT_IS_TRUE(ok);
+
+    VectorDynSize C_nu_l_foot(6 + nrOfDofs);
+    toEigen(C_nu_l_foot) = toEigen(coriolisMatrix_l_foot) * toEigen(nu_l_foot);
+
+    ASSERT_EQUAL_VECTOR_TOL(toEigen(C_nu_l_foot).tail(nrOfDofs),
+                            toEigen(biasForces_l_foot.jointTorques())
+                                - toEigen(gravityForces_l_foot.jointTorques()),
+                            1e-8);
+
+    ASSERT_EQUAL_VECTOR_TOL(toEigen(C_nu_l_foot).head(6),
+                            toEigen(biasForces_l_foot.baseWrench())
+                                - toEigen(gravityForces_l_foot.baseWrench()),
+                            1e-8);
+
+    // Now set floating base to l_sole
+    ok = dynComp.setFloatingBase(baseFrameName);
+    ASSERT_IS_TRUE(ok);
+
+    // Update state with l_sole as floating base
+    Transform world_H_l_sole = dynComp.getWorldTransform(baseFrameName);
+    Twist base_vel_l_sole = dynComp.getFrameVel(baseFrameName);
+    ok = dynComp.setRobotState(world_H_l_sole, q_joint, base_vel_l_sole, qdot_joint, gravity);
+    ASSERT_IS_TRUE(ok);
+
+    VectorDynSize nu_l_sole(6 + nrOfDofs);
+    ok = dynComp.getModelVel(nu_l_sole);
+    ASSERT_IS_TRUE(ok);
+
+    // Get coriolis matrix, mass matrix, and mass matrix derivative with l_sole as base
+    MatrixDynSize coriolisMatrix_l_sole(6 + nrOfDofs, 6 + nrOfDofs);
+    MatrixDynSize massMatrix_l_sole(6 + nrOfDofs, 6 + nrOfDofs);
+    MatrixDynSize massMatrixDerivative_l_sole(6 + nrOfDofs, 6 + nrOfDofs);
+    ok = dynComp.getCoriolisAndMassMatrices(coriolisMatrix_l_sole,
+                                            massMatrix_l_sole,
+                                            massMatrixDerivative_l_sole);
+    ASSERT_IS_TRUE(ok);
+
+    // Check mass Mdot = C + C^T
+    ASSERT_EQUAL_MATRIX_TOL(toEigen(massMatrixDerivative_l_sole),
+                            toEigen(coriolisMatrix_l_sole)
+                                + toEigen(coriolisMatrix_l_sole).transpose(),
+                            1e-8);
+
+    // Check mass matrices consistency
+    MatrixDynSize massMatrix_l_sole_reference(6 + nrOfDofs, 6 + nrOfDofs);
+    ok = dynComp.getFreeFloatingMassMatrix(massMatrix_l_sole_reference);
+    ASSERT_IS_TRUE(ok);
+    ASSERT_EQUAL_MATRIX_TOL(toEigen(massMatrix_l_sole), toEigen(massMatrix_l_sole_reference), 1e-8);
+
+    // Check C_nu = bias_forces - gravity_forces
+    FreeFloatingGeneralizedTorques biasForces_l_sole(dynComp.model());
+    ok = dynComp.generalizedBiasForces(biasForces_l_sole);
+    ASSERT_IS_TRUE(ok);
+    Vector6 zeroBaseAcc;
+    zeroBaseAcc.zero();
+    VectorDynSize zeroJointAcc(nrOfDofs);
+    zeroJointAcc.zero();
+    LinkNetExternalWrenches zeroExternalWrenches(dynComp.model());
+    zeroExternalWrenches.zero();
+    FreeFloatingGeneralizedTorques inverseDynamicsBias(dynComp.model());
+    ASSERT_IS_TRUE(dynComp.inverseDynamics(zeroBaseAcc,
+                                           zeroJointAcc,
+                                           zeroExternalWrenches,
+                                           inverseDynamicsBias));
+    ASSERT_EQUAL_VECTOR(biasForces_l_sole.baseWrench(), inverseDynamicsBias.baseWrench());
+    ASSERT_EQUAL_VECTOR(biasForces_l_sole.jointTorques(), inverseDynamicsBias.jointTorques());
+    ASSERT_EQUAL_VECTOR(dynComp.getFrameBiasAcc("root_link"),
+                        dynComp.getFrameAcc("root_link", zeroBaseAcc, zeroJointAcc));
+    FreeFloatingGeneralizedTorques gravityForces_l_sole(dynComp.model());
+    ok = ok && dynComp.generalizedGravityForces(gravityForces_l_sole);
+    ASSERT_IS_TRUE(ok);
+
+    VectorDynSize C_nu_l_sole(6 + nrOfDofs);
+    toEigen(C_nu_l_sole) = toEigen(coriolisMatrix_l_sole) * toEigen(nu_l_sole);
+
+    ASSERT_EQUAL_VECTOR_TOL(toEigen(C_nu_l_sole).tail(nrOfDofs),
+                            toEigen(biasForces_l_sole.jointTorques())
+                                - toEigen(gravityForces_l_sole.jointTorques()),
+                            1e-8);
+
+    ASSERT_EQUAL_VECTOR_TOL(toEigen(C_nu_l_sole).head(6),
+                            toEigen(biasForces_l_sole.baseWrench())
+                                - toEigen(gravityForces_l_sole.baseWrench()),
+                            1e-8);
+
+    // check kinetic energy consistency
+    double kineticEnergy_l_foot
+        = 0.5 * toEigen(nu_l_foot).transpose() * toEigen(massMatrix_l_foot) * toEigen(nu_l_foot);
+    double kineticEnergy_l_sole
+        = 0.5 * toEigen(nu_l_sole).transpose() * toEigen(massMatrix_l_sole) * toEigen(nu_l_sole);
+
+    ASSERT_EQUAL_DOUBLE_TOL(kineticEnergy_l_foot, kineticEnergy_l_sole, 1e-9);
+
+    // Check the mass derivative independently of C + C^T by advancing the physical state.
+    // This model has one position coordinate per degree of freedom.
+    ASSERT_EQUAL_DOUBLE(q_joint.size(), qdot_joint.size());
+    Twist bodyFixedBaseVel = base_vel_l_sole;
+    if (frameVelRepr == MIXED_REPRESENTATION)
+    {
+        bodyFixedBaseVel = world_H_l_sole.getRotation().inverse() * base_vel_l_sole;
+    } else if (frameVelRepr == INERTIAL_FIXED_REPRESENTATION)
+    {
+        bodyFixedBaseVel = world_H_l_sole.inverse() * base_vel_l_sole;
+    }
+    const double dt = 1e-6;
+    MatrixDynSize massBefore, massAfter;
+    for (double step : {-dt, dt})
+    {
+        Twist displacement;
+        fromEigen(displacement, step * toEigen(bodyFixedBaseVel));
+        VectorDynSize jointPos = q_joint;
+        toEigen(jointPos) += step * toEigen(qdot_joint);
+        ASSERT_IS_TRUE(dynComp.setRobotState(world_H_l_sole * displacement.exp(),
+                                             jointPos,
+                                             base_vel_l_sole,
+                                             qdot_joint,
+                                             gravity));
+        ASSERT_IS_TRUE(dynComp.getFreeFloatingMassMatrix(step < 0 ? massBefore : massAfter));
+    }
+    ASSERT_EQUAL_MATRIX_TOL(toEigen(massMatrixDerivative_l_sole),
+                            (toEigen(massAfter) - toEigen(massBefore)) / (2 * dt),
+                            1e-5);
+}
+
+void testCoriolisMatrixAlgorithmOnFloatingBaseModelAllRepresentations(std::string modelFilePath)
+{
+
+    for (auto repr :
+         {BODY_FIXED_REPRESENTATION, MIXED_REPRESENTATION, INERTIAL_FIXED_REPRESENTATION})
+    {
+
+        std::string reprStr;
+        switch (repr)
+        {
+        case BODY_FIXED_REPRESENTATION:
+            reprStr = "BODY_FIXED_REPRESENTATION";
+            break;
+        case INERTIAL_FIXED_REPRESENTATION:
+            reprStr = "INERTIAL_FIXED_REPRESENTATION";
+            break;
+        case MIXED_REPRESENTATION:
+            reprStr = "MIXED_REPRESENTATION";
+            break;
+        default:
+            reprStr = "UNKNOWN_REPRESENTATION";
+            break;
+        }
+
+        std::cout << "Testing getCoriolisAndMassMatrices using different floating bases for "
+                     "representation "
+                  << reprStr << " on model " << modelFilePath << std::endl;
+        testCoriolisMatrixAlgorithmOnFloatingBaseModel(modelFilePath, repr);
+        testCoriolisMatrixAlgorithmOnFloatingBaseModel(modelFilePath, repr, "offset_base");
+    }
+}
+
 int main()
 {
     // Just run the tests on a handful of models to avoid
@@ -1479,6 +1747,10 @@ int main()
 
     // Test getCoriolisAndMassMatrices on random models
     testCoriolisAndMassMatricesOnRandomModels();
+
+    // Test getCoriolisAndMassMatrices on a Floating Base Model using different floating bases
+    testCoriolisMatrixAlgorithmOnFloatingBaseModelAllRepresentations(getAbsModelPath("iCubGenova02."
+                                                                                     "urdf"));
 
     return EXIT_SUCCESS;
 }

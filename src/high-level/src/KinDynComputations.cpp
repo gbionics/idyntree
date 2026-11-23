@@ -496,19 +496,26 @@ void KinDynComputations::computeBiasAccFwdKinematics()
     // Convert input base acceleration, that in this case is zero
     Vector6 zeroBaseAcc;
     zeroBaseAcc.zero();
+    // Zero acceleration refers to the selected frame, whose origin may differ from the link's.
+    Vector6 baseLinkAccInSelectedVelRepr = zeroBaseAcc;
+    if (pimpl->m_isFloatingBaseFrame)
+    {
+        pimpl->convertBaseFrameAccelerationToBaseLinkAcceleration(zeroBaseAcc,
+                                                                  baseLinkAccInSelectedVelRepr);
+    }
     if (pimpl->m_frameVelRepr == BODY_FIXED_REPRESENTATION)
     {
-        fromEigen(pimpl->m_baseBiasAcc, toEigen(zeroBaseAcc));
+        fromEigen(pimpl->m_baseBiasAcc, toEigen(baseLinkAccInSelectedVelRepr));
     } else if (pimpl->m_frameVelRepr == INERTIAL_FIXED_REPRESENTATION)
     {
         pimpl->m_baseBiasAcc
-            = convertInertialAccelerationToBodyFixedAcceleration(zeroBaseAcc,
+            = convertInertialAccelerationToBodyFixedAcceleration(baseLinkAccInSelectedVelRepr,
                                                                  pimpl->m_pos.worldBasePos());
     } else
     {
         assert(pimpl->m_frameVelRepr == MIXED_REPRESENTATION);
         pimpl->m_baseBiasAcc
-            = convertMixedAccelerationToBodyFixedAcceleration(zeroBaseAcc,
+            = convertMixedAccelerationToBodyFixedAcceleration(baseLinkAccInSelectedVelRepr,
                                                               pimpl->m_vel.baseVel(),
                                                               pimpl->m_pos.worldBasePos()
                                                                   .getRotation());
@@ -2633,13 +2640,27 @@ void KinDynComputations::KinDynComputationsPrivateAttributes::
     // with (b_v_a,b)x being the 6x6 matrix associated to the cross product with the spatial
     // velocity of the base expressed in body-fixed coordinates.
 
-    Transform A_T_B;
-    Twist vel_for_derivative;
+    Transform A_T_B; // newFrame_H_B
+    Twist vel_for_derivative; // B_v_newFrame,B
 
     if (m_frameVelRepr == BODY_FIXED_REPRESENTATION)
     {
-        // In body-fixed representation nothing to do
-        return;
+        if (m_isFloatingBaseFrame)
+        {
+            // body-fixed with an additional frame of the link as floating base
+            // The frame is fixed to the link, so in the body-fixed frame of the link,
+            // it has no relative velocity
+            A_T_B = m_baseLinkToBaseFrame.inverse();
+            Vector3 zero_linvel, zero_ang_vel;
+            zero_linvel.zero();
+            zero_ang_vel.zero();
+            vel_for_derivative = Twist(zero_linvel, zero_ang_vel);
+
+        } else
+        {
+            // body-fixed with base link frame as floating base - nothing to do
+            return;
+        }
     } else if (m_frameVelRepr == INERTIAL_FIXED_REPRESENTATION)
     {
         A_T_B = m_pos.worldBasePos();
@@ -2649,11 +2670,20 @@ void KinDynComputations::KinDynComputationsPrivateAttributes::
     {
         assert(m_frameVelRepr == MIXED_REPRESENTATION);
         A_T_B = Transform(m_pos.worldBasePos().getRotation(), Position::Zero());
-        // For mixed representation, the MIXED frame origin is at the base,
-        // so only the angular part contributes to the derivative.
+        // The mixed frame has world orientation and its origin at the selected base frame.
         Vector3 zero_linvel;
         zero_linvel.zero();
         vel_for_derivative = Twist(zero_linvel, m_vel.baseVel().getAngularVec3());
+        if (m_isFloatingBaseFrame)
+        {
+            // Shift the mixed origin from the base link B to the additional frame F.
+            // A_H_B = (W_R_B, -W_R_B * B_p_F), so the relative velocity in B is
+            // (-B_omega x B_p_F, B_omega), including the motion of the shifted origin.
+            A_T_B = A_T_B * Transform(Rotation::Identity(), -m_baseLinkToBaseFrame.getPosition());
+            toEigen(vel_for_derivative.getLinearVec3())
+                = -toEigen(m_vel.baseVel().getAngularVec3())
+                       .cross(toEigen(m_baseLinkToBaseFrame.getPosition()));
+        }
     }
 
     Matrix6x6 A_X_B, A_Xdot_B, B_X_A, B_Xdot_A;
@@ -3391,8 +3421,7 @@ bool KinDynComputations::getCoriolisAndMassMatrices(
     // As stated by Theorem 3.3 in S. Traversaro "Modelling, Estimation and Identification of
     // Humanoid Robots Dynamics" PhD thesis, the property M_dot - 2C is skew symmetric also holds
     // for different velocity representations. So we can compute M_dot as C + C^T.
-    if (pimpl->m_frameVelRepr == INERTIAL_FIXED_REPRESENTATION
-        || pimpl->m_frameVelRepr == MIXED_REPRESENTATION)
+    if (pimpl->m_frameVelRepr != BODY_FIXED_REPRESENTATION || pimpl->m_isFloatingBaseFrame)
     {
         toEigen(freeFloatingMassMatrixDerivative)
             = toEigen(freeFloatingCoriolisMatrix) + toEigen(freeFloatingCoriolisMatrix).transpose();
@@ -3656,19 +3685,26 @@ bool KinDynComputations::generalizedBiasForces(FreeFloatingGeneralizedTorques& g
     // but the "zero" in mixed means non-zero in body-fixed, and we should account for that
     Vector6 zeroBaseAcc;
     zeroBaseAcc.zero();
+    // Zero acceleration refers to the selected frame, whose origin may differ from the link's.
+    Vector6 baseLinkAccInSelectedVelRepr = zeroBaseAcc;
+    if (pimpl->m_isFloatingBaseFrame)
+    {
+        pimpl->convertBaseFrameAccelerationToBaseLinkAcceleration(zeroBaseAcc,
+                                                                  baseLinkAccInSelectedVelRepr);
+    }
     if (pimpl->m_frameVelRepr == BODY_FIXED_REPRESENTATION)
     {
-        fromEigen(pimpl->m_invDynBaseAcc, toEigen(zeroBaseAcc));
+        fromEigen(pimpl->m_invDynBaseAcc, toEigen(baseLinkAccInSelectedVelRepr));
     } else if (pimpl->m_frameVelRepr == INERTIAL_FIXED_REPRESENTATION)
     {
         pimpl->m_invDynBaseAcc
-            = convertInertialAccelerationToBodyFixedAcceleration(zeroBaseAcc,
+            = convertInertialAccelerationToBodyFixedAcceleration(baseLinkAccInSelectedVelRepr,
                                                                  pimpl->m_pos.worldBasePos());
     } else
     {
         assert(pimpl->m_frameVelRepr == MIXED_REPRESENTATION);
         pimpl->m_invDynBaseAcc
-            = convertMixedAccelerationToBodyFixedAcceleration(zeroBaseAcc,
+            = convertMixedAccelerationToBodyFixedAcceleration(baseLinkAccInSelectedVelRepr,
                                                               pimpl->m_vel.baseVel(),
                                                               pimpl->m_pos.worldBasePos()
                                                                   .getRotation());
