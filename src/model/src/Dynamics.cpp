@@ -688,12 +688,10 @@ bool CoriolisMatrixAlgorithm(const Model& model,
     // vanishes in C * nu because (v_B x) * v_B = 0, but is needed for the derivative
     // of M in body-fixed base coordinates.
     Eigen::MatrixXd baseMotionSubspaceDerivativeContribution
-        = massMatrixEigen.leftCols(6)
-          * toEigen(linkVels(baseLinkIndex).asCrossProductMatrix());
+        = massMatrixEigen.leftCols(6) * toEigen(linkVels(baseLinkIndex).asCrossProductMatrix());
     coriolisMatrixEigen.leftCols(6) += baseMotionSubspaceDerivativeContribution;
     massMatrixDerivativeEigen.leftCols(6) += baseMotionSubspaceDerivativeContribution;
-    massMatrixDerivativeEigen.topRows(6)
-        += baseMotionSubspaceDerivativeContribution.transpose();
+    massMatrixDerivativeEigen.topRows(6) += baseMotionSubspaceDerivativeContribution.transpose();
     return true;
 }
 

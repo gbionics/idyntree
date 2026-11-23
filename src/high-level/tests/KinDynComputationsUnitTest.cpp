@@ -1254,7 +1254,7 @@ void testFloatingBaseFrameConsistency(std::string modelFilePath,
                         baseForceAndJointTorques_with_l_sole_base.jointTorques());
     VectorDynSize biasCorrection(6 + dynComp.getNrOfDegreesOfFreedom());
     toEigen(biasCorrection) = toEigen(MassMatrix_with_l_sole_base).leftCols(6)
-                             * toEigen(l_sole_bias_acc_with_l_foot_base);
+                              * toEigen(l_sole_bias_acc_with_l_foot_base);
     ASSERT_EQUAL_VECTOR(toEigen(biasForces_with_l_foot_base.jointTorques()),
                         toEigen(biasForces_with_l_sole_base.jointTorques())
                             + toEigen(biasCorrection).tail(dynComp.getNrOfDegreesOfFreedom()));
@@ -1653,10 +1653,10 @@ void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
         VectorDynSize jointPos = q_joint;
         toEigen(jointPos) += step * toEigen(qdot_joint);
         ASSERT_IS_TRUE(dynComp.setRobotState(world_H_l_sole * displacement.exp(),
-                                              jointPos,
-                                              base_vel_l_sole,
-                                              qdot_joint,
-                                              gravity));
+                                             jointPos,
+                                             base_vel_l_sole,
+                                             qdot_joint,
+                                             gravity));
         ASSERT_IS_TRUE(dynComp.getFreeFloatingMassMatrix(step < 0 ? massBefore : massAfter));
     }
     ASSERT_EQUAL_MATRIX_TOL(toEigen(massMatrixDerivative_l_sole),
@@ -1665,11 +1665,11 @@ void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
 }
 
 void testCoriolisMatrixAlgorithmOnFloatingBaseModelAllRepresentations(std::string modelFilePath)
-{    
+{
 
     for (auto repr :
          {BODY_FIXED_REPRESENTATION, MIXED_REPRESENTATION, INERTIAL_FIXED_REPRESENTATION})
-    {   
+    {
 
         std::string reprStr;
         switch (repr)

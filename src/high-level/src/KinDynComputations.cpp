@@ -501,7 +501,7 @@ void KinDynComputations::computeBiasAccFwdKinematics()
     if (pimpl->m_isFloatingBaseFrame)
     {
         pimpl->convertBaseFrameAccelerationToBaseLinkAcceleration(zeroBaseAcc,
-                                                                 baseLinkAccInSelectedVelRepr);
+                                                                  baseLinkAccInSelectedVelRepr);
     }
     if (pimpl->m_frameVelRepr == BODY_FIXED_REPRESENTATION)
     {
@@ -2656,7 +2656,8 @@ void KinDynComputations::KinDynComputationsPrivateAttributes::
             zero_ang_vel.zero();
             vel_for_derivative = Twist(zero_linvel, zero_ang_vel);
 
-        } else {
+        } else
+        {
             // body-fixed with base link frame as floating base - nothing to do
             return;
         }
@@ -2678,8 +2679,7 @@ void KinDynComputations::KinDynComputationsPrivateAttributes::
             // Shift the mixed origin from the base link B to the additional frame F.
             // A_H_B = (W_R_B, -W_R_B * B_p_F), so the relative velocity in B is
             // (-B_omega x B_p_F, B_omega), including the motion of the shifted origin.
-            A_T_B = A_T_B
-                    * Transform(Rotation::Identity(), -m_baseLinkToBaseFrame.getPosition());
+            A_T_B = A_T_B * Transform(Rotation::Identity(), -m_baseLinkToBaseFrame.getPosition());
             toEigen(vel_for_derivative.getLinearVec3())
                 = -toEigen(m_vel.baseVel().getAngularVec3())
                        .cross(toEigen(m_baseLinkToBaseFrame.getPosition()));
@@ -3421,8 +3421,7 @@ bool KinDynComputations::getCoriolisAndMassMatrices(
     // As stated by Theorem 3.3 in S. Traversaro "Modelling, Estimation and Identification of
     // Humanoid Robots Dynamics" PhD thesis, the property M_dot - 2C is skew symmetric also holds
     // for different velocity representations. So we can compute M_dot as C + C^T.
-    if (pimpl->m_frameVelRepr != BODY_FIXED_REPRESENTATION
-        || pimpl->m_isFloatingBaseFrame)
+    if (pimpl->m_frameVelRepr != BODY_FIXED_REPRESENTATION || pimpl->m_isFloatingBaseFrame)
     {
         toEigen(freeFloatingMassMatrixDerivative)
             = toEigen(freeFloatingCoriolisMatrix) + toEigen(freeFloatingCoriolisMatrix).transpose();
@@ -3691,7 +3690,7 @@ bool KinDynComputations::generalizedBiasForces(FreeFloatingGeneralizedTorques& g
     if (pimpl->m_isFloatingBaseFrame)
     {
         pimpl->convertBaseFrameAccelerationToBaseLinkAcceleration(zeroBaseAcc,
-                                                                 baseLinkAccInSelectedVelRepr);
+                                                                  baseLinkAccInSelectedVelRepr);
     }
     if (pimpl->m_frameVelRepr == BODY_FIXED_REPRESENTATION)
     {
