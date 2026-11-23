@@ -13,6 +13,7 @@
 #include <iDynTree/Traversal.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <unordered_set>
 #include <vector>
 
@@ -30,6 +31,7 @@ static bool addVisualPropertiesToModel(
     const Model& model,
     const std::unordered_map<std::string, std::vector<VisualElement::VisualInfo>>& visuals,
     const std::unordered_map<std::string, MaterialElement::MaterialInfo>& materialDatabase,
+    const std::string& originalFilename,
     ModelSolidShapes& modelGeometries);
 
 URDFDocument::URDFDocument(XMLParserState& parserState, const iDynTree::ModelParserOptions& options)
@@ -191,6 +193,7 @@ bool URDFDocument::documentHasBeenParsed()
     if (!addVisualPropertiesToModel(m_model,
                                     m_buffers.visuals,
                                     m_buffers.materials,
+                                    m_options.originalFilename,
                                     m_model.visualSolidShapes()))
     {
         reportError("URDFDocument",
@@ -200,6 +203,7 @@ bool URDFDocument::documentHasBeenParsed()
     if (!addVisualPropertiesToModel(m_model,
                                     m_buffers.collisions,
                                     m_buffers.materials,
+                                    m_options.originalFilename,
                                     m_model.collisionSolidShapes()))
     {
         reportError("URDFDocument",
@@ -410,8 +414,11 @@ bool addVisualPropertiesToModel(
     const Model& model,
     const std::unordered_map<std::string, std::vector<VisualElement::VisualInfo>>& visuals,
     const std::unordered_map<std::string, MaterialElement::MaterialInfo>& materialDatabase,
+    const std::string& originalFilename,
     ModelSolidShapes& modelGeometries)
 {
+    const std::filesystem::path modelDir = std::filesystem::path(originalFilename).parent_path();
+
     for (const auto& linkVisual : visuals)
     {
         // A urdf link can be either a iDynTree link or an iDynTree frame, solve
@@ -484,6 +491,18 @@ bool addVisualPropertiesToModel(
             LinkIndex idyntreeLinkIndex = model.getLinkIndex(linkName);
             // ModelSolidShapes contains plain pointers, but they own the memory.
             SolidShape* solidShape = shape->clone();
+            if (solidShape->isExternalMesh() && !modelDir.empty())
+            {
+                ExternalMesh* mesh = solidShape->asExternalMesh();
+                const std::string& meshFile = mesh->getFilename();
+                const bool hasScheme = meshFile.find(":/") != std::string::npos
+                                       || meshFile.rfind("file:", 0) == 0;
+                const std::filesystem::path meshPath(meshFile);
+                if (!meshPath.empty() && !hasScheme && meshPath.is_relative())
+                {
+                    mesh->setFilename((modelDir / meshPath).lexically_normal().string());
+                }
+            }
             modelGeometries.getLinkSolidShapes()[idyntreeLinkIndex].push_back(solidShape);
         }
     }

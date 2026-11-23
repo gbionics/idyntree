@@ -165,6 +165,10 @@ bool ModelLoader::loadModelFromFile(const std::string& filename,
     // Allocate parser
     std::shared_ptr<XMLParser> parser = std::make_shared<XMLParser>();
     auto parserOptions = this->m_pimpl->m_options;
+    if (parserOptions.originalFilename.empty())
+    {
+        parserOptions.originalFilename = filename;
+    }
     auto documentFactoryWithOptions = [parserOptions](XMLParserState& state) {
         return std::shared_ptr<XMLDocument>(new URDFDocument(state, parserOptions));
     };

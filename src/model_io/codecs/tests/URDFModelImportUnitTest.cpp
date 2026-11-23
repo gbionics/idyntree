@@ -113,6 +113,12 @@ void checkModelLoderForURDFFile(std::string urdfFile)
     ModelLoader loader;
     bool result = loader.loadModelFromFile(urdfFile);
     ASSERT_IS_TRUE(result && loader.isValid());
+    ASSERT_EQUAL_STRING(loader.model()
+                            .visualSolidShapes()
+                            .getLinkSolidShapes()[0][0]
+                            ->asExternalMesh()
+                            ->getFileLocationOnLocalFileSystem(),
+                        getAbsModelPath("cube.stl"));
 }
 
 void checkModelLoaderFromURDFString(std::string urdfString, bool shouldBeCorrect = true)
