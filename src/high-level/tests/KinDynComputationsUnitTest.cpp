@@ -1175,6 +1175,12 @@ void testFloatingBaseFrameConsistency(std::string modelFilePath,
     iDynTree::Vector6 rootLinkAcceleration_with_l_foot_base
         = dynComp.getFrameAcc(rootLinkName, base_acc_l_foot, ddq_joint);
     iDynTree::Vector6 rootLink_bias_acc_with_l_foot_base = dynComp.getFrameBiasAcc(rootLinkName);
+    Vector6 zeroBaseAcc;
+    zeroBaseAcc.zero();
+    VectorDynSize zeroJointAcc(dynComp.getNrOfDegreesOfFreedom());
+    zeroJointAcc.zero();
+    Vector6 l_sole_bias_acc_with_l_foot_base
+        = dynComp.getFrameAcc(baseFrameName, zeroBaseAcc, zeroJointAcc);
     MatrixDynSize MassMatrix_with_l_foot_base(6 + dynComp.getNrOfDegreesOfFreedom(),
                                               6 + dynComp.getNrOfDegreesOfFreedom());
     dynComp.getFreeFloatingMassMatrix(MassMatrix_with_l_foot_base);
@@ -1236,13 +1242,22 @@ void testFloatingBaseFrameConsistency(std::string modelFilePath,
                         l_foot_velocity_with_l_sole_base.asVector());
     ASSERT_EQUAL_VECTOR(dynComp.getBaseTwist().asVector(),
                         l_sole_velocity_with_l_sole_base.asVector());
-    ASSERT_EQUAL_VECTOR(rootLink_bias_acc_with_l_foot_base, rootLink_bias_acc_with_l_sole_base);
+    // Zero mixed acceleration at the foot gives a centripetal acceleration at the sole.
+    // Account for that change of generalized acceleration when comparing bias quantities.
+    ASSERT_EQUAL_VECTOR(toEigen(rootLink_bias_acc_with_l_foot_base),
+                        toEigen(rootLink_bias_acc_with_l_sole_base)
+                            + toEigen(Jacobian_rootLink_with_l_sole_base).leftCols(6)
+                                  * toEigen(l_sole_bias_acc_with_l_foot_base));
     ASSERT_EQUAL_VECTOR(rootLinkAcceleration_with_l_foot_base,
                         rootLinkAcceleration_with_l_sole_base);
     ASSERT_EQUAL_VECTOR(baseForceAndJointTorques_with_l_foot_base.jointTorques(),
                         baseForceAndJointTorques_with_l_sole_base.jointTorques());
-    ASSERT_EQUAL_VECTOR(biasForces_with_l_foot_base.jointTorques(),
-                        biasForces_with_l_sole_base.jointTorques());
+    VectorDynSize biasCorrection(6 + dynComp.getNrOfDegreesOfFreedom());
+    toEigen(biasCorrection) = toEigen(MassMatrix_with_l_sole_base).leftCols(6)
+                             * toEigen(l_sole_bias_acc_with_l_foot_base);
+    ASSERT_EQUAL_VECTOR(toEigen(biasForces_with_l_foot_base.jointTorques()),
+                        toEigen(biasForces_with_l_sole_base.jointTorques())
+                            + toEigen(biasCorrection).tail(dynComp.getNrOfDegreesOfFreedom()));
     ASSERT_EQUAL_VECTOR(gravityForces_with_l_foot_base.jointTorques(),
                         gravityForces_with_l_sole_base.jointTorques());
     iDynTree::Transform toFrame_H_fromFrame;
@@ -1262,8 +1277,11 @@ void testFloatingBaseFrameConsistency(std::string modelFilePath,
     ASSERT_EQUAL_VECTOR(baseForceAndJointTorques_with_l_foot_base.baseWrench(),
                         toFrame_H_fromFrame
                             * baseForceAndJointTorques_with_l_sole_base.baseWrench());
+    Wrench correctedBiasWrench = biasForces_with_l_sole_base.baseWrench();
+    fromEigen(correctedBiasWrench,
+              toEigen(biasForces_with_l_sole_base.baseWrench()) + toEigen(biasCorrection).head(6));
     ASSERT_EQUAL_VECTOR(biasForces_with_l_foot_base.baseWrench(),
-                        toFrame_H_fromFrame * biasForces_with_l_sole_base.baseWrench());
+                        toFrame_H_fromFrame * correctedBiasWrench);
     ASSERT_EQUAL_VECTOR(gravityForces_with_l_foot_base.baseWrench(),
                         toFrame_H_fromFrame * gravityForces_with_l_sole_base.baseWrench());
 
@@ -1429,7 +1447,8 @@ void testCoriolisAndMassMatricesOnRandomModels()
 }
 
 void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
-                                                    const FrameVelocityRepresentation frameVelRepr)
+                                                    const FrameVelocityRepresentation frameVelRepr,
+                                                    const std::string& baseFrameName = "l_sole")
 {
     // It tests getCoriolisAndMassMatrices on a floating base model with
     // different frames used as floating base.
@@ -1437,8 +1456,13 @@ void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
     iDynTree::KinDynComputations dynComp;
     iDynTree::ModelLoader mdlLoader;
     bool ok = mdlLoader.loadModelFromFile(modelFilePath);
-    ok = ok && dynComp.loadRobotModel(mdlLoader.model());
     ASSERT_IS_TRUE(ok);
+    Model model = mdlLoader.model();
+    ASSERT_IS_TRUE(model.addAdditionalFrameToLink("l_foot",
+                                                  "offset_base",
+                                                  Transform(Rotation::RPY(0.4, -0.6, 0.8),
+                                                            Position(0.2, -0.3, 0.4))));
+    ASSERT_IS_TRUE(dynComp.loadRobotModel(model));
 
     ok = dynComp.setFrameVelocityRepresentation(frameVelRepr);
     ASSERT_IS_TRUE(ok);
@@ -1447,7 +1471,6 @@ void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
 
     // Test with iCub model using l_foot as base link vs l_sole as base frame
     std::string baseLinkName = "l_foot";
-    std::string baseFrameName = "l_sole";
 
     // Check if both frames exist in the model
     int baseLinkIndex = dynComp.model().getFrameIndex(baseLinkName);
@@ -1570,6 +1593,21 @@ void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
     FreeFloatingGeneralizedTorques biasForces_l_sole(dynComp.model());
     ok = dynComp.generalizedBiasForces(biasForces_l_sole);
     ASSERT_IS_TRUE(ok);
+    Vector6 zeroBaseAcc;
+    zeroBaseAcc.zero();
+    VectorDynSize zeroJointAcc(nrOfDofs);
+    zeroJointAcc.zero();
+    LinkNetExternalWrenches zeroExternalWrenches(dynComp.model());
+    zeroExternalWrenches.zero();
+    FreeFloatingGeneralizedTorques inverseDynamicsBias(dynComp.model());
+    ASSERT_IS_TRUE(dynComp.inverseDynamics(zeroBaseAcc,
+                                           zeroJointAcc,
+                                           zeroExternalWrenches,
+                                           inverseDynamicsBias));
+    ASSERT_EQUAL_VECTOR(biasForces_l_sole.baseWrench(), inverseDynamicsBias.baseWrench());
+    ASSERT_EQUAL_VECTOR(biasForces_l_sole.jointTorques(), inverseDynamicsBias.jointTorques());
+    ASSERT_EQUAL_VECTOR(dynComp.getFrameBiasAcc("root_link"),
+                        dynComp.getFrameAcc("root_link", zeroBaseAcc, zeroJointAcc));
     FreeFloatingGeneralizedTorques gravityForces_l_sole(dynComp.model());
     ok = ok && dynComp.generalizedGravityForces(gravityForces_l_sole);
     ASSERT_IS_TRUE(ok);
@@ -1594,6 +1632,36 @@ void testCoriolisMatrixAlgorithmOnFloatingBaseModel(std::string modelFilePath,
         = 0.5 * toEigen(nu_l_sole).transpose() * toEigen(massMatrix_l_sole) * toEigen(nu_l_sole);
 
     ASSERT_EQUAL_DOUBLE_TOL(kineticEnergy_l_foot, kineticEnergy_l_sole, 1e-9);
+
+    // Check the mass derivative independently of C + C^T by advancing the physical state.
+    // This model has one position coordinate per degree of freedom.
+    ASSERT_EQUAL_DOUBLE(q_joint.size(), qdot_joint.size());
+    Twist bodyFixedBaseVel = base_vel_l_sole;
+    if (frameVelRepr == MIXED_REPRESENTATION)
+    {
+        bodyFixedBaseVel = world_H_l_sole.getRotation().inverse() * base_vel_l_sole;
+    } else if (frameVelRepr == INERTIAL_FIXED_REPRESENTATION)
+    {
+        bodyFixedBaseVel = world_H_l_sole.inverse() * base_vel_l_sole;
+    }
+    const double dt = 1e-6;
+    MatrixDynSize massBefore, massAfter;
+    for (double step : {-dt, dt})
+    {
+        Twist displacement;
+        fromEigen(displacement, step * toEigen(bodyFixedBaseVel));
+        VectorDynSize jointPos = q_joint;
+        toEigen(jointPos) += step * toEigen(qdot_joint);
+        ASSERT_IS_TRUE(dynComp.setRobotState(world_H_l_sole * displacement.exp(),
+                                              jointPos,
+                                              base_vel_l_sole,
+                                              qdot_joint,
+                                              gravity));
+        ASSERT_IS_TRUE(dynComp.getFreeFloatingMassMatrix(step < 0 ? massBefore : massAfter));
+    }
+    ASSERT_EQUAL_MATRIX_TOL(toEigen(massMatrixDerivative_l_sole),
+                            (toEigen(massAfter) - toEigen(massBefore)) / (2 * dt),
+                            1e-5);
 }
 
 void testCoriolisMatrixAlgorithmOnFloatingBaseModelAllRepresentations(std::string modelFilePath)
@@ -1624,6 +1692,7 @@ void testCoriolisMatrixAlgorithmOnFloatingBaseModelAllRepresentations(std::strin
                      "representation "
                   << reprStr << " on model " << modelFilePath << std::endl;
         testCoriolisMatrixAlgorithmOnFloatingBaseModel(modelFilePath, repr);
+        testCoriolisMatrixAlgorithmOnFloatingBaseModel(modelFilePath, repr, "offset_base");
     }
 }
 

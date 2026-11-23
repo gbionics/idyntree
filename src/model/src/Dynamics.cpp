@@ -681,6 +681,19 @@ bool CoriolisMatrixAlgorithm(const Model& model,
                 = toEigen(B[visitedLinkIndex]) + toEigen(B[visitedLinkIndex]).transpose();
         }
     }
+
+    // The six base velocity coordinates are expressed in the moving base frame.
+    // Like the joint motion subspaces above, their spatial derivatives are v_B x S_B.
+    // Include M[:, B] * (v_B x) in C and its symmetric part in Mdot. This term
+    // vanishes in C * nu because (v_B x) * v_B = 0, but is needed for the derivative
+    // of M in body-fixed base coordinates.
+    Eigen::MatrixXd baseMotionSubspaceDerivativeContribution
+        = massMatrixEigen.leftCols(6)
+          * toEigen(linkVels(baseLinkIndex).asCrossProductMatrix());
+    coriolisMatrixEigen.leftCols(6) += baseMotionSubspaceDerivativeContribution;
+    massMatrixDerivativeEigen.leftCols(6) += baseMotionSubspaceDerivativeContribution;
+    massMatrixDerivativeEigen.topRows(6)
+        += baseMotionSubspaceDerivativeContribution.transpose();
     return true;
 }
 
