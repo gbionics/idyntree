@@ -30,7 +30,8 @@ jobs:
           conda config --remove channels defaults
 
           # Dependencies
-          conda install doxygen=1.9.1 toml pygments docutils jinja2
+          # The pinned m.css revision uses APIs removed in newer Python versions.
+          conda install python=3.11 doxygen=1.9.1 toml pygments docutils jinja2
 
       - name: Fetch m.css
         shell: bash -l {0}
